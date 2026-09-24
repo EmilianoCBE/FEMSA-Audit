@@ -54,7 +54,9 @@
     background:none;width:100%;text-align:left;font-family:inherit;}
   .nav-item:hover{background:#EFF0F2;}
   .nav-item.active{background:var(--accent-bg);color:var(--accent);font-weight:500;}
-  .nav-item .ico{width:14px;height:14px;flex:none;opacity:.65;}
+  .nav-item .ico{width:12px;height:12px;flex:none;opacity:.65;
+    display:flex;align-items:center;justify-content:center;}
+  .nav-item .ico svg{width:12px;height:12px;}
   .nav-item.active .ico{opacity:1;}
   .nav-sub{padding-left:22px;}
   .nav-sub .nav-item{font-size:12.5px;padding:5px 8px;}
