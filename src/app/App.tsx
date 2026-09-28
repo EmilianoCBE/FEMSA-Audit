@@ -1,5 +1,6 @@
-import { MockupShell } from "../features/app-builder/MockupShell";
+import { RouterProvider } from "react-router";
+import { router } from "./router";
 
 export function App() {
-  return <MockupShell />;
+  return <RouterProvider router={router} />;
 }

@@ -1,0 +1,89 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens — única fuente de verdad del sistema visual.
+ * Cada token genera utilidades de Tailwind: --color-accent -> bg-accent, text-accent, border-accent...
+ * Evita colores/tamaños sueltos en componentes; si falta un valor, agrégalo aquí.
+ *
+ * TODO(US06 - Juan Aguilar): validar colores, tipografía y consistencia responsive contra la identidad visual FEMSA.
+ */
+@theme {
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, Menlo, monospace;
+
+  /* Texto */
+  --color-ink: #111827;
+  --color-ink-2: #374151;
+  --color-muted: #6b7280;
+  --color-muted-2: #9ca3af;
+
+  /* Superficies y bordes */
+  --color-line: #e5e7eb;
+  --color-line-2: #d1d5db;
+  --color-line-soft: #f1f2f4;
+  --color-bg: #f3f4f6;
+  --color-surface: #ffffff;
+  --color-surface-hover: #f9fafb;
+  --color-row-hover: #fafbfc;
+  --color-nav: #fafafa;
+  --color-nav-hover: #eff0f2;
+  --color-count: #e9eaec;
+  --color-avatar: #dce1e8;
+  --color-grid-dot: #e3e5e9;
+
+  /* Marca y acento */
+  --color-femsa: #a32035;
+  --color-accent: #1b4b8f;
+  --color-accent-hover: #163c73;
+  --color-accent-bg: #eef3fa;
+  --color-accent-soft: #dce7f4;
+  --color-accent-line: #b9cde6;
+
+  /* Estados */
+  --color-amber: #92610c;
+  --color-amber-bg: #fdf6e7;
+  --color-amber-line: #ebd9b0;
+  --color-amber-strong: #e0c27a;
+  --color-green: #166534;
+  --color-green-bg: #edf7f0;
+  --color-green-line: #c4e3ce;
+  --color-red: #9b1c1c;
+  --color-red-bg: #fdf0f0;
+  --color-red-line: #e8c4c4;
+  --color-red-soft: #b98080;
+
+  /* Escala tipográfica del mockup */
+  --text-micro: 9.5px;
+  --text-tiny: 10px;
+  --text-caption: 10.5px;
+  --text-label: 11px;
+  --text-meta: 11.5px;
+  --text-control: 12px;
+  --text-body-sm: 12.5px;
+  --text-body: 13px;
+  --text-heading-sm: 13.5px;
+  --text-heading: 19px;
+
+  /* El mockup colapsa sidebar e inspector por debajo de 900px */
+  --breakpoint-desktop: 56.3125rem;
+}
+
+@layer base {
+  body {
+    @apply bg-bg font-sans text-sm/[1.45] text-ink antialiased;
+  }
+
+  /*
+   * El mockup usa el line-height nativo del navegador en controles. Se fija también --tw-leading
+   * porque las utilidades text-* de Tailwind v4 lo leen para calcular su line-height.
+   */
+  button,
+  input {
+    --tw-leading: normal;
+    line-height: normal;
+  }
+
+  button {
+    @apply cursor-pointer;
+  }
+}
