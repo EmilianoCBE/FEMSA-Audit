@@ -87,3 +87,93 @@
     @apply cursor-pointer;
   }
 }
+
+@layer components {
+  /*
+   * Media queries del reto.
+   * Se aplican en general desde aquí y solo ajustan piezas específicas cuando una vista lo necesita.
+   */
+
+  /* Full HD: 1920 x 1080 */
+  @media (min-width: 1600px) and (max-width: 1999px) {
+    .app-shell {
+      max-width: 1440px;
+    }
+
+    .app-topbar {
+      padding-inline: 28px;
+    }
+  }
+
+  /* 2K / QHD: 2560 x 1440 */
+  @media (min-width: 2000px) and (max-width: 2999px) {
+    .app-shell {
+      max-width: 1720px;
+      grid-template-columns: 260px 1fr;
+    }
+
+    .app-topbar {
+      height: 58px;
+      padding-inline: 32px;
+    }
+
+    .workflow-flow-grid {
+      grid-template-columns: 1fr 340px;
+    }
+
+    .responsive-table th,
+    .responsive-table td {
+      padding-inline: 18px;
+    }
+  }
+
+  /* Ultrawide: 3440 x 1440 y relaciones cercanas a 21:9 */
+  @media (min-width: 2400px) and (min-aspect-ratio: 21/9) {
+    .app-shell {
+      max-width: 1880px;
+      grid-template-columns: 272px 1fr;
+    }
+
+    .workflow-flow-grid {
+      grid-template-columns: minmax(0, 1fr) 380px;
+    }
+
+    .workflow-canvas {
+      margin-inline: 36px;
+    }
+  }
+
+  /* 4K: 3840 x 2160 */
+  @media (min-width: 3000px) {
+    .app-shell {
+      max-width: 2200px;
+      grid-template-columns: 300px 1fr;
+    }
+
+    .app-topbar {
+      height: 64px;
+      padding-inline: 40px;
+    }
+
+    .app-main {
+      font-size: 15px;
+    }
+
+    .workflow-flow-grid {
+      grid-template-columns: minmax(0, 1fr) 420px;
+    }
+
+    .workflow-canvas {
+      margin-block: 36px;
+      margin-inline: 44px;
+      transform: scale(1.12);
+      transform-origin: top left;
+    }
+
+    .responsive-table th,
+    .responsive-table td {
+      padding-inline: 20px;
+      padding-block: 13px;
+    }
+  }
+}

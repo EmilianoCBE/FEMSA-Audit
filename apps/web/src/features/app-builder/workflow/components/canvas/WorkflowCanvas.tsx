@@ -8,7 +8,7 @@ import { WorkflowTransitions } from "./WorkflowTransitions";
 /** Dibuja el diagrama completo a partir de datos; no conoce el origen del flujo. */
 export function WorkflowCanvas({ diagram }: { diagram: WorkflowDiagram }) {
   return (
-    <div className="relative mx-6 my-7" style={{ width: diagram.size.width, height: diagram.size.height }}>
+    <div className="workflow-canvas relative mx-6 my-7" style={{ width: diagram.size.width, height: diagram.size.height }}>
       <CanvasToolbar />
       <WorkflowTransitions size={diagram.size} transitions={diagram.transitions} />
       {diagram.states.map((state) => (

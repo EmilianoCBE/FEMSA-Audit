@@ -6,7 +6,7 @@ export function Topbar() {
   const breadcrumb = useBreadcrumb();
 
   return (
-    <div className="flex h-[52px] flex-none items-center gap-3 border-b border-line px-4 desktop:px-6">
+    <div className="app-topbar flex h-[52px] flex-none items-center gap-3 border-b border-line px-4 desktop:px-6">
       <Breadcrumbs items={breadcrumb} />
       <div className="ml-auto flex items-center gap-2">
         <Badge tone="amber" size="sm">Borrador · v4</Badge>

@@ -26,7 +26,7 @@ const alignClassName = { left: "text-left", center: "text-center" } as const;
  */
 export function DataTable<T>({ columns, rows, getRowKey, className }: DataTableProps<T>) {
   return (
-    <table className={cn("w-full border-collapse overflow-hidden rounded-md border border-line bg-surface", className)}>
+    <table className={cn("responsive-table w-full border-collapse overflow-hidden rounded-md border border-line bg-surface", className)}>
       <thead>
         <tr>
           {columns.map((column) => (

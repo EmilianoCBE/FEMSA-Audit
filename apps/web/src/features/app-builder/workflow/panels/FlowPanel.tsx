@@ -14,7 +14,7 @@ export function FlowPanel() {
   const [inspectorView, setInspectorView] = useState<InspectorView>("settings");
 
   return (
-    <div className="grid min-h-0 flex-1 grid-cols-1 desktop:grid-cols-[1fr_300px]">
+    <div className="workflow-flow-grid grid min-h-0 flex-1 grid-cols-1 desktop:grid-cols-[1fr_300px]">
       <div className="overflow-auto border-r border-line bg-[radial-gradient(var(--color-grid-dot)_1px,transparent_1px)] bg-size-[20px_20px]">
         <AssistantBanner summary={assistantSummaryMock} onReview={() => setInspectorView("assistant")} />
         <WorkflowCanvas diagram={findingLifecycleMock} />
