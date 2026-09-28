@@ -1,125 +1,165 @@
 # FEMSA Auditoría Interna — App Builder
 
 Plataforma propia de FEMSA para reemplazar Archer Audit Risk. Este repositorio contiene el **App Builder**
-(Workflow + Designer) y la base visual compartida que usarán los demás módulos.
+(Workflow + Designer), la base visual compartida y la API conectada a Azure SQL.
 
-Stack: **React 19 + TypeScript + Vite + Tailwind CSS v4 + React Router 7**.
+| App | Stack | Carpeta |
+| --- | --- | --- |
+| Frontend | React 19 + TypeScript + Vite + Tailwind CSS v4 + React Router 7 | `apps/web` |
+| API | Node.js ≥ 22 + Express 5 (JavaScript, ES Modules) + `mssql` | `apps/api` |
+| Base de datos | Azure SQL Database (SQL Server) — `femsa-101.database.windows.net` / `plantacion` | — |
+
+## Puesta en marcha
+
+### 1. Dependencias
 
 ```bash
-npm install
-npm run dev        # http://127.0.0.1:5173
-npm run typecheck  # tsc sin emitir
-npm run build
+npm install          # instala web y api (npm workspaces) desde la raíz
 ```
 
-## Rutas
+### 2. Conexión a Azure SQL
 
-| Ruta | Pantalla |
-| --- | --- |
-| `/bandeja` | Mi bandeja |
-| `/app-builder/workflow/{flow,rules,notifications,history}` | Workflow (cada tab es una URL) |
-| `/app-builder/designer/{fields,permissions,validations,history}` | Designer |
+1. Crea `apps/api/.env` a partir de `apps/api/.env.example` (servidor, base y usuario ya vienen llenos) y pon la contraseña en `DB_PASSWORD`.
+   **`.env` nunca se sube al repo** (está en `.gitignore`).
+2. Permite tu IP en el firewall: Azure Portal → SQL Server `femsa-101` → *Redes* → *Agregar la dirección IPv4 del cliente*.
+   Cada integrante debe agregar la suya (y actualizarla si cambia de red).
 
-## Estructura
+### 3. Desarrollo
 
-```
-src/
-├── app/                      # Composición de la aplicación (no contiene lógica de negocio)
-│   ├── App.tsx               # RouterProvider
-│   ├── router.tsx            # Ensambla las rutas que expone cada feature
-│   ├── navigation.ts         # Menú lateral declarativo
-│   └── layout/               # AppLayout, Sidebar, Topbar
-├── features/                 # Un módulo por dominio; cada uno es autocontenido
-│   ├── auth/                 # Usuario actual (hook useCurrentUser)
-│   ├── inbox/                # Mi bandeja
-│   └── app-builder/
-│       ├── routes.tsx
-│       ├── workflow/
-│       ├── designer/
-│       └── version-history/  # Reutilizado por Workflow y Designer
-├── shared/                   # Código sin conocimiento de ningún dominio
-│   ├── ui/                   # Design system (Button, Badge, DataTable, Tabs, ...)
-│   ├── routing/              # ROUTES, breadcrumbs, createTabbedRoute
-│   ├── hooks/
-│   └── lib/cn.ts             # clsx + tailwind-merge
-└── styles/index.css          # Tokens de diseño (@theme) — única fuente de colores y tipografía
+```bash
+npm run dev          # API en :3000 y web en :5173 al mismo tiempo
+npm run dev:web      # solo frontend
+npm run dev:api      # solo API (nodemon, se reinicia al guardar)
+npm run build        # typecheck + build del frontend
 ```
 
-Cada feature sigue la misma forma:
+Verifica la conexión en <http://127.0.0.1:3000/api/health> → `{"status":"ok","database":"ok"}`.
+Si la API no logra conectarse, arranca igual y muestra en consola qué revisar.
+
+> **Estado actual:** la API solo establece la conexión. Aún no hay tablas, así que el frontend usa datos mock
+> detrás de sus servicios (`features/*/services/`). Cuando existan las tablas, cada servicio cambia una línea
+> para llamar a la API con `httpClient`; los componentes no se tocan.
+
+## Arquitectura
+
+```
+React (navegador) ──/api──▶ Express (apps/api) ──mssql──▶ Azure SQL
+```
+
+El navegador **nunca** se conecta a la base de datos: las credenciales solo viven en la API.
+
+### Frontend (`apps/web/src`)
+
+```
+app/            → composición: router, menú lateral (config), layout
+features/       → un módulo por dominio (auth, inbox, app-builder/{workflow,designer,version-history})
+shared/
+  ├── api/httpClient.ts   → único punto que hace fetch
+  ├── hooks/useQuery.ts   → carga con estados loading/error/reintento
+  ├── ui/                 → design system (Button, DataTable, Tabs, QueryState…)
+  └── routing/            → ROUTES, breadcrumbs, createTabbedRoute
+styles/index.css → tokens de diseño (@theme)
+```
+
+Cada feature:
 
 ```
 features/<feature>/
-├── types.ts        # Modelos de dominio (sin React)
-├── data/*.mock.ts  # Datos de ejemplo; se reemplazarán por servicios/API
-├── lib/            # Reglas de negocio puras (filtros, cálculos, mapeos estado→estilo)
-├── components/     # Componentes de presentación de la feature
-├── panels/         # Contenido de cada tab (si la pantalla tiene tabs)
-├── pages/          # Pantalla completa: header + tabs + <Outlet />
-├── tabs.tsx        # Declaración de tabs enrutados (si aplica)
-├── routes.tsx      # Rutas que la feature expone al router
-└── index.ts        # API pública (solo si otra feature la consume)
+├── types.ts       # Modelos de dominio
+├── data/          # Datos mock
+├── services/      # Fuente de datos de la feature (hoy mock, después httpClient)
+├── lib/           # Reglas de negocio puras (filtros, cálculos, mapeos estado→estilo)
+├── components/    # Presentación: reciben datos por props
+├── panels/        # Contenido de cada tab; usan useQuery(service.metodo)
+├── pages/         # Pantalla: header + tabs + <Outlet />
+├── tabs.tsx       # Tabs enrutados (si aplica)
+└── routes.tsx     # Rutas que la feature expone al router
 ```
 
-### Reglas de dependencia
+Flujo de datos: `componente → useQuery → service → (mock hoy / httpClient → API después)`. Los componentes no saben de `fetch` ni de URLs.
 
-- `shared/` **no importa** de `features/` ni de `app/`.
-- Una feature **no importa** de otra salvo por su `index.ts` (ej. `@/features/auth`).
-- `app/` solo compone: importa rutas y layout, no define pantallas.
-- Usa el alias `@/` para imports entre carpetas de primer nivel y rutas relativas dentro de la misma feature.
+### API (`apps/api`)
+
+Misma estructura que la REST API vista en clase (Express + dotenv + cors + morgan + nodemon), con SQL Server en lugar de MongoDB:
+
+```
+index.js          → carga .env, conecta a la BD y levanta el servidor
+app.js            → middlewares (morgan, cors, json) y rutas bajo /api
+db/db.js          → configuración de Azure SQL y pool de conexiones compartido (getPool)
+routes/           → define endpoints        (index.routes.js)
+controllers/      → req/res                 (index.controller.js)
+middlewares/      → 404 y manejo central de errores
+utils/            → errores HTTP (HttpError, badRequest, notFoundError)
+```
+
+| Método | Ruta | Descripción |
+| --- | --- | --- |
+| GET | `/api/ping` | `{"msg":"pong"}` |
+| GET | `/api/health` | Estado de la conexión a la base de datos (503 si no responde) |
+
+Los errores responden `{ "msg": "..." }` con su código HTTP.
+
+#### Al agregar tablas y endpoints
+
+Sigue el flujo `routes → controllers → services → repositories`:
+
+- `repositories/<modulo>.repository.js` — solo SQL. Usa `const pool = await getPool()` y **siempre** parámetros
+  (`.input("id", sql.Int, id)`), nunca concatenes valores del usuario en el SQL.
+- `services/<modulo>.service.js` — reglas de negocio y validación (lanza `badRequest()` / `notFoundError()`).
+- `controllers/<modulo>.controller.js` — `export const getX = async (req, res) => res.json(await service())`.
+  Express 5 manda los errores al `errorHandler`, no hace falta `try/catch`.
+- `routes/<modulo>.routes.js` — y regístralo en `app.js` con `app.use("/api", ...)`.
 
 ## Principios SOLID aplicados
 
 | Principio | Dónde se ve |
 | --- | --- |
-| **S** — Responsabilidad única | Datos (`data/`), reglas (`lib/`), presentación (`components/`) y composición (`pages/`) viven separados. `WorkflowCanvas` solo dibuja; no sabe de dónde vienen los estados. |
-| **O** — Abierto/cerrado | Menú (`navigation.ts`), tabs (`tabs.tsx`), filtros de bandeja (`INBOX_FILTERS`), estilos de transición (`VARIANT_STYLES`) y columnas de `DataTable` son configuración: se extienden agregando entradas, sin editar el componente. |
-| **L** — Sustitución de Liskov | `Button`, `Badge`, `FilterChip` extienden las props nativas de HTML: se usan donde se usaría un `<button>`/`<span>`. |
-| **I** — Segregación de interfaces | Props pequeñas y específicas (`SeverityIndicator` recibe `severity`, no el hallazgo completo). |
-| **D** — Inversión de dependencias | Los componentes dependen de tipos y props, no de la fuente de datos. `useCurrentUser()` aísla la sesión: cambiar el mock por Microsoft Entra ID no toca la UI. |
+| **S** — Responsabilidad única | Web: servicios, reglas (`lib/`), presentación y páginas separados. API: rutas, controladores (HTTP), conexión (`db/`) y errores separados. |
+| **O** — Abierto/cerrado | Menú, tabs, filtros de bandeja, columnas de `DataTable`, routers de la API: se extienden agregando entradas. |
+| **L** — Sustitución de Liskov | `Button`, `Badge`, `FilterChip` extienden las props nativas de HTML. |
+| **I** — Segregación de interfaces | Props y servicios pequeños y específicos por feature. |
+| **D** — Inversión de dependencias | Componentes dependen de servicios, no de la fuente de datos: pasar de mock a API no los modifica. |
 
 ## Estilos (Tailwind)
 
-- Los tokens están en `src/styles/index.css` dentro de `@theme`. Cada token genera utilidades:
-  `--color-accent` → `bg-accent`, `text-accent`, `border-accent`; `--text-body-sm` → `text-body-sm`.
+- Tokens en `apps/web/src/styles/index.css` (`@theme`): `--color-accent` → `bg-accent`, `text-accent`…
 - **No uses colores hex en componentes.** Si falta un valor, agrégalo como token.
-- Si agregas un tamaño de fuente `--text-*`, agrégalo también en `src/shared/lib/cn.ts`
-  (si no, `tailwind-merge` lo confunde con un color).
-- Combina clases con `cn()`; para componentes con variantes usa `cva` (ver `shared/ui/Button.tsx`).
-- Breakpoint `desktop:` (≥ 901px): por debajo se ocultan sidebar e inspector, igual que el mockup.
+- Si agregas un tamaño `--text-*`, agrégalo también en `shared/lib/cn.ts` (para `tailwind-merge`).
+- Breakpoint `desktop:` (≥ 901px).
 
 ## Cómo implementar una historia de usuario
 
-1. Busca tu historia: `grep -rn "TODO(US07" src` — el TODO está en el archivo donde empieza el trabajo.
-2. Modela primero el dominio en `types.ts` y los datos en `data/*.mock.ts`.
-3. Pon la lógica en funciones puras dentro de `lib/`.
-4. Construye la UI con componentes de `@/shared/ui`. Si necesitas un componente genérico nuevo, agrégalo a `shared/ui` y expórtalo en su `index.ts`.
-5. ¿Pantalla o tab nueva?
-   - **Tab** en una pantalla existente: agrega una entrada en el `tabs.tsx` de la feature.
-   - **Pantalla** nueva: crea `features/<modulo>/` con `pages/` y `routes.tsx`, agrega la ruta en `shared/routing/routes.ts`, regístrala en `app/router.tsx` y agrega el `to` en `app/navigation.ts`.
-6. Corre `npm run typecheck` antes de subir cambios.
+1. Busca tu historia: `grep -rn "TODO(US07" apps` — el TODO está donde empieza el trabajo.
+2. **Web:** define el tipo en `types.ts`, los datos en `data/*.mock.ts`, el método en `services/`,
+   y consúmelo con `useQuery` + `<QueryState>`. La lógica va en funciones puras dentro de `lib/`.
+3. **API (cuando haya tablas):** repositorio → servicio → controlador → ruta (ver sección API).
+4. **Pantalla o tab nueva:** tab → entrada en `tabs.tsx`; pantalla → `features/<modulo>/routes.tsx`,
+   ruta en `shared/routing/routes.ts`, registro en `app/router.tsx` y `to` en `app/navigation.ts`.
+5. Corre `npm run build` antes de subir cambios.
 
 ### Mapa de historias
 
 | US | Responsable | Archivo de entrada |
 | --- | --- | --- |
-| US01 | Rafael Valdez | `features/auth/hooks/useCurrentUser.ts`, `app/router.tsx` |
-| US02 | Karla Alessandra | `app/navigation.ts` (nuevo módulo Usuarios y roles) |
-| US03 | Magda Colunga | `app-builder/designer/panels/FieldsPanel.tsx` |
-| US04 | Rafael Valdez | `app-builder/workflow/components/canvas/WorkflowStateNode.tsx` |
-| US05 | Juan Aguilar | `app-builder/workflow/panels/FlowPanel.tsx` |
-| US06 | Juan Aguilar | `styles/index.css` |
-| US07 | Karla Alessandra | `app-builder/designer/panels/FieldsPanel.tsx` |
-| US08 | Leonel | `app/layout/topbar/Topbar.tsx` |
-| US09 | Magda Colunga | `app/navigation.ts` (módulo Reportes) |
-| US10 | Juan Aguilar | `app/layout/topbar/Topbar.tsx` |
-| US11 | Rafael Valdez | `app-builder/version-history/data/versions.mock.ts` |
-| US12 | Leonel | `app-builder/version-history/components/VersionHistoryPanel.tsx` |
-| US13 | Magda Colunga | `app-builder/designer/panels/PermissionsPanel.tsx` |
-| US14 | Leonel | `app-builder/designer/panels/PermissionsPanel.tsx`, `features/auth` |
-| US15–US17 | Emiliano Carrizales | `app-builder/workflow/components/inspector/DesignAssistantPanel.tsx` |
-| US18 | Karla Alessandra | `app-builder/workflow/components/inspector/DesignAssistantPanel.tsx` |
+| US01 | Rafael Valdez | `web: features/auth/hooks/useCurrentUser.ts`, `web: app/router.tsx` |
+| US02 | Karla Alessandra | `web: app/navigation.ts` (nuevo módulo Usuarios y roles) |
+| US03 | Magda Colunga | `web: app-builder/designer/panels/FieldsPanel.tsx` |
+| US04 | Rafael Valdez | `web: workflow/components/canvas/WorkflowStateNode.tsx` |
+| US05 | Juan Aguilar | `web: app-builder/workflow/panels/FlowPanel.tsx` |
+| US06 | Juan Aguilar | `web: styles/index.css` |
+| US07 | Karla Alessandra | `web: app-builder/designer/panels/FieldsPanel.tsx` |
+| US08 | Leonel | `web: app/layout/topbar/Topbar.tsx` |
+| US09 | Magda Colunga | `web: app/navigation.ts` (módulo Reportes) |
+| US10 | Juan Aguilar | `web: app/layout/topbar/Topbar.tsx` |
+| US11 | Rafael Valdez | `web: version-history/data/versions.mock.ts` |
+| US12 | Leonel | `web: version-history/components/VersionHistoryPanel.tsx` |
+| US13 | Magda Colunga | `web: app-builder/designer/panels/PermissionsPanel.tsx` |
+| US14 | Leonel | `web: designer/panels/PermissionsPanel.tsx`, `web: features/auth` |
+| US15–US17 | Emiliano Carrizales | `web: workflow/components/inspector/DesignAssistantPanel.tsx` |
+| US18 | Karla Alessandra | `web: workflow/components/inspector/DesignAssistantPanel.tsx` |
 
-## Próximos pasos sugeridos
+## Pendiente
 
-- Capa de servicios por feature (`services/`) con interfaces + implementación mock, consumida vía hooks, para conectar el backend sin tocar componentes.
-- ESLint + Prettier (`prettier-plugin-tailwindcss` para ordenar clases) y Vitest para `lib/`.
+- Diseñar y crear las tablas en Azure SQL, y cambiar los servicios del frontend de mock a `httpClient`.
+- Autenticación de la API (US01/US14).
+- ESLint + Prettier y Vitest.
