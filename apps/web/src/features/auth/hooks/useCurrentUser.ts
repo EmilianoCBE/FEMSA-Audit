@@ -1,13 +1,13 @@
-import { currentUserMock } from "../data/currentUser.mock";
+import { useAuth } from '../AuthProvider';
 import type { User } from "../types";
 
 /**
  * Punto único de acceso al usuario autenticado. Los componentes dependen de este hook,
- * no de la fuente de datos, así que cambiar el mock por la sesión real no los afecta.
- *
- * TODO(US01 - Rafael Valdez): obtener la sesión desde Microsoft Entra ID y bloquear usuarios no autorizados.
+ * no de la fuente de datos. La sesión se carga desde la API en AuthProvider.
  * TODO(US14 - Leonel): exponer el rol autenticado para restringir funcionalidades no autorizadas.
  */
 export function useCurrentUser(): User {
-  return currentUserMock;
+  const { user } = useAuth();
+  if (!user) throw new Error('No hay una sesión activa.');
+  return user;
 }
