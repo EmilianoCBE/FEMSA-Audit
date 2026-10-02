@@ -6,7 +6,7 @@ import { defineConfig } from "vite";
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
-    // En desarrollo, /api se reenvía al backend Express (apps/api).
+    // En desarrollo, /api se reenvía al backend Express (repo FEMSA-Audit-Backend).
     proxy: { "/api": "http://127.0.0.1:3000" },
   },
   resolve: {
