@@ -19,7 +19,7 @@ npm install          # instala web y api (npm workspaces) desde la raíz
 
 ### 2. Conexión a Azure SQL
 
-1. Crea `apps/api/.env` a partir de `apps/api/.env.example` (servidor, base y usuario ya vienen llenos) y pon la contraseña en `DB_PASSWORD`.
+1. Crea `apps/api/.env` con `DB_SERVER`, `DB_NAME`, `DB_USER` y `DB_PASSWORD` de tu instancia de Azure SQL.
    **`.env` nunca se sube al repo** (está en `.gitignore`).
 2. Permite tu IP en el firewall: Azure Portal → SQL Server `femsa-101` → *Redes* → *Agregar la dirección IPv4 del cliente*.
    Cada integrante debe agregar la suya (y actualizarla si cambia de red).
@@ -36,9 +36,9 @@ npm run build        # typecheck + build del frontend
 Verifica la conexión en <http://127.0.0.1:3000/api/health> → `{"status":"ok","database":"ok"}`.
 Si la API no logra conectarse, arranca igual y muestra en consola qué revisar.
 
-> **Estado actual:** la API solo establece la conexión. Aún no hay tablas, así que el frontend usa datos mock
-> detrás de sus servicios (`features/*/services/`). Cuando existan las tablas, cada servicio cambia una línea
-> para llamar a la API con `httpClient`; los componentes no se tocan.
+La aplicación requiere iniciar sesión en `/login`. Consulta [la configuración de autenticación](apps/api/AUTH.md)
+para crear el esquema y usuarios en SQL y habilitar Microsoft Entra ID. El resto de los módulos conserva sus datos mock
+detrás de sus servicios (`features/*/services/`).
 
 ## Arquitectura
 
