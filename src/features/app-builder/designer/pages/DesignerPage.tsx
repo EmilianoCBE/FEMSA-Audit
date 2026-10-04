@@ -1,5 +1,6 @@
 import { Outlet } from "react-router";
 import { Page, PageHeader, RouteTabs } from "@/shared/ui";
+import { EmbeddedWorkflowPanel } from "../../workflow/components/EmbeddedWorkflowPanel";
 import { DESIGNER_TABS } from "../tabs";
 
 export function DesignerPage() {
@@ -11,6 +12,7 @@ export function DesignerPage() {
       >
         <RouteTabs label="Secciones del designer" tabs={DESIGNER_TABS} />
       </PageHeader>
+      <EmbeddedWorkflowPanel />
       <Outlet />
     </Page>
   );
