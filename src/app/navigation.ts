@@ -48,9 +48,23 @@ export const NAVIGATION: readonly NavSection[] = [
     label: "Contenido",
     owner: "Equipo B",
     items: [
-      { label: "Biblioteca de riesgos", icon: Library },
-      { label: "Catálogo de controles", icon: LayoutGrid },
-      { label: "Evidencias", icon: FileText },
+      {
+        label: "Biblioteca de riesgos",
+        icon: Library,
+      },
+      {
+        label: "Clasificación de riesgos",
+        icon: AlertTriangle,
+        to: "/riesgos/clasificacion",
+      },
+      {
+        label: "Catálogo de controles",
+        icon: LayoutGrid,
+      },
+      {
+        label: "Evidencias",
+        icon: FileText,
+      },
     ],
   },
   {
