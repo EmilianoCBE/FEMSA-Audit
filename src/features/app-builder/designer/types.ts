@@ -38,3 +38,31 @@ export type ValidationRule = {
   message: string;
   active: boolean;
 };
+
+export type ElementoDesigner = {
+  id: string;
+  type: FormFieldType | "number" | "section";
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  config: {
+    label?: string;
+    required?: boolean;
+    section?: "identificacion" | "evaluacion" | "remediacion";
+    description?: string;
+    formula?: string;
+    editable?: boolean;
+    includeInReports?: boolean;
+    visibleStates?: string[];
+    [key: string]: unknown;
+  };
+};
+
+export type PlantillaDesigner = {
+  id: string;
+  name: string;
+  elements: ElementoDesigner[];
+  createdAt: string;
+  updatedAt: string;
+};

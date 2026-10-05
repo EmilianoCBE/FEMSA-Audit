@@ -6,7 +6,7 @@ export const OVERDUE_THRESHOLD_DAYS = 7;
 
 export const STATUS_CONFIG: Record<FindingStatus, { label: string; tone: BadgeTone }> = {
   "in-review": { label: "En revisión", tone: "amber" },
-  "manager-validation": { label: "Validación jefatura", tone: "blue" },
+  "manager-validation": { label: "Validación del responsable", tone: "blue" },
   "director-validation": { label: "Validación dirección", tone: "blue" },
   closed: { label: "Cerrado", tone: "green" },
 };

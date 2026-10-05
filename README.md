@@ -116,7 +116,7 @@ estructura, endpoints y cómo agregar tablas.
 | US15–US17 | Emiliano Carrizales | `web: workflow/components/inspector/DesignAssistantPanel.tsx` |
 | US18 | Karla Alessandra | `web: workflow/components/inspector/DesignAssistantPanel.tsx` |
 
-## Pendiente
 
-- Diseñar y crear las tablas en Azure SQL, y cambiar los servicios del frontend de mock a `httpClient`.
-- ESLint + Prettier y Vitest.
+### Importante 
+### Recuerden agregar el .env al backend y usar un usuario y contraseña que este en la bd
+### Si no lo habian agregado darle save y correr primero el back y luego el front. 
