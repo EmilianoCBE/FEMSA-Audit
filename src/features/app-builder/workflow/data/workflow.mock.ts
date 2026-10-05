@@ -13,7 +13,7 @@ export const findingLifecycleMock: WorkflowDiagram = {
   states: [
     { id: "draft", kind: "Inicial", name: "Borrador", tone: "neutral", position: { x: 22, y: 20 } },
     { id: "in-review", kind: "En proceso", name: "En revisión", tone: "amber", position: { x: 222, y: 20 } },
-    { id: "manager-validation", kind: "Aprobación", name: "Validación jefatura", tone: "accent", position: { x: 422, y: 20 } },
+    { id: "manager-validation", kind: "Aprobación", name: "Validación del responsable", tone: "accent", position: { x: 422, y: 20 } },
     { id: "director-validation", kind: "Aprobación", name: "Validación dirección", tone: "accent", position: { x: 622, y: 20 } },
     { id: "closed", kind: "Final", name: "Cerrado", tone: "green", position: { x: 822, y: 20 } },
     { id: "rejected", kind: "Retorno", name: "Rechazado", tone: "red", position: { x: 622, y: 170 } },
@@ -43,7 +43,7 @@ export const findingLifecycleMock: WorkflowDiagram = {
 };
 
 export const selectedTransitionMock: TransitionSettings = {
-  title: "Validación jefatura → Validación dirección",
+  title: "Validación del responsable → Validación dirección",
   permissions: [
     { label: "Rol que puede ejecutarla", value: "Jefe de Auditoría" },
     { label: "Segregación de funciones", value: "No puede aprobar su propia auditoría" },
@@ -90,7 +90,7 @@ export const assistantSuggestionsMock: readonly AssistantSuggestion[] = [
 ];
 
 export const workflowRulesMock: WorkflowRule[] = [
-  { id: "evidence", name: "Evidencia requerida", condition: "Antes de validar jefatura", action: "Bloquear avance", active: true },
+  { id: "evidence", name: "Evidencia requerida", condition: "Antes de validar responsable", action: "Bloquear avance", active: true },
   { id: "action-plan", name: "Plan obligatorio", condition: "Severidad alta", action: "Solicitar plan de acción", active: true },
   { id: "reject-comment", name: "Comentario de rechazo", condition: "Al rechazar", action: "Pedir comentario", active: true },
 ];

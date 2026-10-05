@@ -11,7 +11,7 @@ export const formFieldsMock: FormField[] = [
 export const permissionMatrixMock: PermissionMatrixData = {
   roles: [
     { id: "auditor", label: "Auditor" },
-    { id: "manager", label: "Jefatura" },
+    { id: "manager", label: "Responsable" },
     { id: "director", label: "Dirección" },
     { id: "auditee", label: "Área auditada" },
   ],

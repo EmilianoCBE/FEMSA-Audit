@@ -49,6 +49,12 @@ export type ElementoDesigner = {
   config: {
     label?: string;
     required?: boolean;
+    section?: "identificacion" | "evaluacion" | "remediacion";
+    description?: string;
+    formula?: string;
+    editable?: boolean;
+    includeInReports?: boolean;
+    visibleStates?: string[];
     [key: string]: unknown;
   };
 };
