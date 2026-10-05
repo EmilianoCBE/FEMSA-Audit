@@ -184,7 +184,7 @@ export function FieldsPanel() {
       setCampoSeleccionadoDesignerId(nuevaPlantillaDesigner.elements[0]?.id);
       queryPlantillasDesigner.reload();
       setTieneCambiosDesigner(false);
-      setMensajeDesigner("Plantilla creada desde el backend.");
+      setMensajeDesigner("Plantilla creada");
     } catch (error) {
       setErrorDesigner(error instanceof Error ? error.message : "No se pudo crear la plantilla Designer.");
     }
@@ -200,9 +200,9 @@ export function FieldsPanel() {
       setPlantillaDesignerActual(plantillaDesigner);
       setCampoSeleccionadoDesignerId(plantillaDesigner.elements[0]?.id);
       setTieneCambiosDesigner(false);
-      setMensajeDesigner("Cambios descartados. Se recargo la plantilla del backend.");
+      setMensajeDesigner("Cambios descartados. Se recargo la plantilla");
     } catch (error) {
-      setErrorDesigner(error instanceof Error ? error.message : "No se pudo recargar la plantilla Designer.");
+      setErrorDesigner(error instanceof Error ? error.message : "No se pudo recargar la plantilla");
     }
   };
 
