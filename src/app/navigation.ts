@@ -75,8 +75,11 @@ export const NAVIGATION: readonly NavSection[] = [
           { label: "Designer", to: ROUTES.appBuilder.designer },
         ],
       },
-      // TODO(US02 - Karla Alessandra): implementar lista de usuarios, asignación de roles y permisos por módulo.
-      { label: "Usuarios y roles", icon: UserCircle },
+      {
+        label: "Usuarios y roles",
+        icon: UserCircle,
+        to: "/users",
+      },
     ],
   },
 ];
