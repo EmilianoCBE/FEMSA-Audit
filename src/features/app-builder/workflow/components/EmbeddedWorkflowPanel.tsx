@@ -83,9 +83,9 @@ const sampleVersion = versionsMock.find((version) => version.status === "draft")
 /** Leer y guardar estado del panel */
 function readExpanded() {
   try {
-    return localStorage.getItem(STORAGE_KEY) !== "false";
+    return localStorage.getItem(STORAGE_KEY) === "true";
   } catch {
-    return true;
+    return false;
   }
 }
 
