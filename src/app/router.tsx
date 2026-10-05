@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate } from "react-router";
 import { appBuilderRoutes } from "@/features/app-builder/routes";
 import { inboxRoutes } from "@/features/inbox/routes";
 import { usersRoutes } from "@/features/users/routes";
+import { riskRoutes } from "@/features/risk/routes";
 import { ROUTES } from "@/shared/routing/routes";
 import { AppLayout } from "./layout/AppLayout";
 import { RequireAuth } from "@/features/auth/AuthProvider";
@@ -21,12 +22,21 @@ export const router = createBrowserRouter([
         children: [
           {
             index: true,
-            element: <Navigate to={ROUTES.appBuilder.workflow} replace />,
+            element: (
+              <Navigate
+                to={ROUTES.appBuilder.workflow}
+                replace
+              />
+            ),
           },
           ...inboxRoutes,
           ...appBuilderRoutes,
           ...usersRoutes,
-          { path: "*", element: <Navigate to={ROUTES.home} replace /> },
+          ...riskRoutes,
+          {
+            path: "*",
+            element: <Navigate to={ROUTES.home} replace />,
+          },
         ],
       },
     ],
