@@ -35,8 +35,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   }
 
   if (!response.ok) {
-    const body = (await response.json().catch(() => null)) as { msg?: string } | null;
-    throw new ApiError(response.status, body?.msg ?? `Error ${response.status} al llamar ${path}`);
+    const body = (await response.json().catch(() => null)) as { message?: string; msg?: string } | null;
+    throw new ApiError(response.status, body?.message ?? body?.msg ?? `Error ${response.status} al llamar ${path}`);
   }
 
   return (await response.json()) as T;
