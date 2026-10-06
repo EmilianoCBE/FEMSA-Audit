@@ -12,7 +12,12 @@ type SegmentedControlProps<T extends string> = {
   className?: string;
 };
 
-export function SegmentedControl<T extends string>({ options, value, onValueChange, className }: SegmentedControlProps<T>) {
+export function SegmentedControl<T extends string>({
+  options,
+  value,
+  onValueChange,
+  className,
+}: SegmentedControlProps<T>) {
   return (
     <div role="radiogroup" className={cn("flex gap-0.5", className)}>
       {options.map((option) => {
@@ -26,7 +31,9 @@ export function SegmentedControl<T extends string>({ options, value, onValueChan
             onClick={() => onValueChange(option.value)}
             className={cn(
               "flex-1 border px-2 py-1.5 text-control first:rounded-l-[5px] last:rounded-r-[5px] last:border-l-0",
-              selected ? "border-accent-line bg-accent-bg font-medium text-accent" : "border-line-2 bg-surface text-muted",
+              selected
+                ? "border-accent-line bg-accent-bg font-medium text-accent"
+                : "border-line-2 bg-surface text-muted",
             )}
           >
             {option.label}

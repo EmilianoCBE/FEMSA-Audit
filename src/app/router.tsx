@@ -22,12 +22,7 @@ export const router = createBrowserRouter([
         children: [
           {
             index: true,
-            element: (
-              <Navigate
-                to={ROUTES.appBuilder.workflow}
-                replace
-              />
-            ),
+            element: <Navigate to={ROUTES.appBuilder.workflow} replace />,
           },
           ...inboxRoutes,
           ...appBuilderRoutes,

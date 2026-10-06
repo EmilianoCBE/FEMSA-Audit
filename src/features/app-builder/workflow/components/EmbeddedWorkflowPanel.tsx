@@ -25,16 +25,16 @@ function getReferenceDiagram(diagram: WorkflowDiagram) {
     states: diagram.states,
     transitions: diagram.transitions
       .filter((transition) => transition.variant !== "suggested")
-      .map((transition) => (transition.variant === "active" ? { ...transition, variant: "default" as const } : transition)),
+      .map((transition) =>
+        transition.variant === "active" ? { ...transition, variant: "default" as const } : transition,
+      ),
   };
 }
 
 /** Secuencia principal */
 function getMainSequence({ states }: WorkflowDiagram) {
   const mainRow = Math.min(...states.map((state) => state.position.y));
-  return states
-    .filter((state) => state.position.y === mainRow)
-    .sort((a, b) => a.position.x - b.position.x);
+  return states.filter((state) => state.position.y === mainRow).sort((a, b) => a.position.x - b.position.x);
 }
 
 /** Inicio y fin de una flecha */
@@ -162,7 +162,8 @@ export function EmbeddedWorkflowPanel() {
                 {branches.map((branch) => (
                   <li key={branch.id}>
                     Desde <span className="font-medium text-ink-2">{branch.from.name}</span> se puede{" "}
-                    <span className="font-medium text-ink-2">{branch.label}</span> y {branch.returns ? "regresa" : "pasa"} a{" "}
+                    <span className="font-medium text-ink-2">{branch.label}</span> y{" "}
+                    {branch.returns ? "regresa" : "pasa"} a{" "}
                     <span className="font-medium text-ink-2">{branch.to.name}</span>.
                   </li>
                 ))}

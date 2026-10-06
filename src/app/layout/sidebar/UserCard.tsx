@@ -1,6 +1,6 @@
 import { useCurrentUser } from "@/features/auth";
 import { Avatar } from "@/shared/ui";
-import { LogoutButton } from '@/features/auth/components/LogoutButton';
+import { LogoutButton } from "@/features/auth/components/LogoutButton";
 
 export function UserCard() {
   const user = useCurrentUser();
