@@ -14,8 +14,19 @@ Plataforma propia de FEMSA para reemplazar Archer Audit Risk. Este repositorio c
 ```bash
 npm install
 npm run dev          # web en :5173
-npm run build        # typecheck + build
 ```
+
+**Importante:** primero levanta el backend (con su `.env` y un usuario que exista en la BD) y después el front.
+
+| Script | Qué hace |
+| --- | --- |
+| `npm run dev` | Servidor de desarrollo en :5173 |
+| `npm run build` | Typecheck + build de producción |
+| `npm run preview` | Sirve el build en :4173 (lo usa Cypress) |
+| `npm run format` | Da formato a todo con Biome |
+| `npm run check` | Lint + formato sin modificar archivos (lo mismo que el CI) |
+| `npm test` / `npm run test:watch` | Pruebas unitarias (Vitest) |
+| `npm run cy:open` / `npm run test:e2e` | Pruebas E2E con Cypress, con interfaz o en consola (requiere `npm run preview` corriendo) |
 
 En desarrollo, Vite reenvía `/api` a `http://127.0.0.1:3000`. Levanta la API desde
 [FEMSA-Audit-Backend](https://github.com/EmilianoCBE/FEMSA-Audit-Backend) con `npm run dev` (ahí está cómo configurar
@@ -24,6 +35,13 @@ En desarrollo, Vite reenvía `/api` a `http://127.0.0.1:3000`. Levanta la API de
 La aplicación requiere iniciar sesión en `/login`. Consulta [la configuración de autenticación](https://github.com/EmilianoCBE/FEMSA-Audit-Backend/blob/main/AUTH.md)
 para crear el esquema y usuarios en SQL y habilitar Microsoft Entra ID. El resto de los módulos conserva sus datos mock
 detrás de sus servicios (`features/*/services/`).
+
+## Pruebas
+
+- **Unitarias (Vitest):** junto al archivo que prueban, `archivo.test.ts`. Prioridad: funciones puras de `lib/` y servicios.
+- **E2E (Cypress):** en `cypress/e2e/*.cy.ts`. No usan backend ni Azure: cada prueba simula la API con `cy.intercept`
+  (ver `cypress/support/e2e.ts`); los datos de ejemplo van en `cypress/fixtures/`.
+- El CI (`.github/workflows/ci.yml`) corre lint, tipos, unitarias, build y Cypress en cada PR a `develop` o `main`.
 
 ## Arquitectura
 
@@ -93,7 +111,7 @@ estructura, endpoints y cómo agregar tablas.
 3. **API (cuando haya tablas):** se implementa en el repo [FEMSA-Audit-Backend](https://github.com/EmilianoCBE/FEMSA-Audit-Backend).
 4. **Pantalla o tab nueva:** tab → entrada en `tabs.tsx`; pantalla → `features/<modulo>/routes.tsx`,
    ruta en `shared/routing/routes.ts`, registro en `app/router.tsx` y `to` en `app/navigation.ts`.
-5. Corre `npm run build` antes de subir cambios.
+5. Agrega pruebas y sigue el flujo de ramas y PRs de [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ### Mapa de historias
 
@@ -115,8 +133,3 @@ estructura, endpoints y cómo agregar tablas.
 | US14 | Leonel | `web: designer/panels/PermissionsPanel.tsx`, `web: features/auth` |
 | US15–US17 | Emiliano Carrizales | `web: workflow/components/inspector/DesignAssistantPanel.tsx` |
 | US18 | Karla Alessandra | `web: workflow/components/inspector/DesignAssistantPanel.tsx` |
-
-
-### Importante 
-### Recuerden agregar el .env al backend y usar un usuario y contraseña que este en la bd
-### Si no lo habian agregado darle save y correr primero el back y luego el front. 
