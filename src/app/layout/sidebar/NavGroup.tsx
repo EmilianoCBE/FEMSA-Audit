@@ -7,7 +7,11 @@ export function NavGroup({ section }: { section: NavSection }) {
     <div className="mt-3.5">
       <Eyebrow className="mb-[5px] flex items-center justify-between px-2">
         {section.label}
-        {section.owner && <Tag size="xs" className="tracking-normal normal-case">{section.owner}</Tag>}
+        {section.owner && (
+          <Tag size="xs" className="tracking-normal normal-case">
+            {section.owner}
+          </Tag>
+        )}
       </Eyebrow>
       {section.items.map((item) => (
         <div key={item.label}>

@@ -32,7 +32,10 @@ export const designerService = {
   },
 
   getPlantillaDesigner: async (plantillaDesignerId: string, signal?: AbortSignal): Promise<PlantillaDesigner> => {
-    const response = await httpClient.get<PlantillaDesignerResponse>(`/designer/layouts/${encodeURIComponent(plantillaDesignerId)}`, signal);
+    const response = await httpClient.get<PlantillaDesignerResponse>(
+      `/designer/layouts/${encodeURIComponent(plantillaDesignerId)}`,
+      signal,
+    );
     return response.layout;
   },
 

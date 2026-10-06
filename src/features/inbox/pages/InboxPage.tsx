@@ -36,7 +36,10 @@ export function InboxPage() {
 
   return (
     <Page>
-      <PageHeader title="Mi bandeja" description="Hallazgos y aprobaciones que esperan tu acción, ordenados por antigüedad.">
+      <PageHeader
+        title="Mi bandeja"
+        description="Hallazgos y aprobaciones que esperan tu acción, ordenados por antigüedad."
+      >
         <Tabs label="Bandeja" tabs={tabs} value={tab} onValueChange={setTab} />
       </PageHeader>
 
@@ -44,7 +47,10 @@ export function InboxPage() {
         {tab === "pending" ? (
           <QueryState query={query}>{(findings) => <PendingFindings findings={findings} />}</QueryState>
         ) : (
-          <EmptyState title="Sin elementos por ahora" description="Esta vista se conectará cuando exista el servicio de bandeja." />
+          <EmptyState
+            title="Sin elementos por ahora"
+            description="Esta vista se conectará cuando exista el servicio de bandeja."
+          />
         )}
       </ContentArea>
     </Page>

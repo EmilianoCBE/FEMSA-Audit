@@ -1,11 +1,5 @@
 import { httpClient } from "@/shared/api/httpClient";
-import type {
-  Role,
-  RolesResponse,
-  UpdateRoleResponse,
-  User,
-  UsersResponse,
-} from "../types";
+import type { Role, RolesResponse, UpdateRoleResponse, User, UsersResponse } from "../types";
 
 export const usersService = {
   list: async (): Promise<User[]> => {

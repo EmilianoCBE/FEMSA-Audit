@@ -29,7 +29,9 @@ describe("Login", () => {
     cy.get("#password").type("una-contraseña-segura");
     cy.contains("button", "Ingresar con usuario y contraseña").click();
 
-    cy.wait("@login").its("request.body").should("deep.equal", { identifier: "ana", password: "una-contraseña-segura" });
+    cy.wait("@login")
+      .its("request.body")
+      .should("deep.equal", { identifier: "ana", password: "una-contraseña-segura" });
     cy.location("pathname").should("not.eq", "/login");
     cy.contains("Ana Auditora");
   });

@@ -17,7 +17,9 @@ function ItemContent({ item, active }: { item: NavItem; active: boolean }) {
   return (
     <>
       {Icon && (
-        <span className={cn("flex size-3 flex-none items-center justify-center", active ? "opacity-100" : "opacity-65")}>
+        <span
+          className={cn("flex size-3 flex-none items-center justify-center", active ? "opacity-100" : "opacity-65")}
+        >
           <Icon className="size-3" />
         </span>
       )}

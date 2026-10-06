@@ -8,7 +8,10 @@ export function Breadcrumbs({ items }: { items: readonly string[] }) {
         return (
           <Fragment key={item}>
             {index > 0 && <span className="text-line-2">/</span>}
-            <span className={isCurrent ? "font-medium text-ink" : undefined} aria-current={isCurrent ? "page" : undefined}>
+            <span
+              className={isCurrent ? "font-medium text-ink" : undefined}
+              aria-current={isCurrent ? "page" : undefined}
+            >
               {item}
             </span>
           </Fragment>
