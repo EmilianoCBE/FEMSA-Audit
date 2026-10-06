@@ -8,7 +8,7 @@
  * TODO(US06 - Juan Aguilar): validar colores, tipografía y consistencia responsive contra la identidad visual FEMSA.
  */
 @theme {
-  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-sans: "Open Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-mono: ui-monospace, Menlo, monospace;
 
   /* Texto */
@@ -19,7 +19,7 @@
 
   /* Superficies y bordes */
   --color-line: #e5e7eb;
-  --color-line-2: #d1d5db;
+  --color-line-2: #d9d9d6;
   --color-line-soft: #f1f2f4;
   --color-bg: #f3f4f6;
   --color-surface: #ffffff;
@@ -32,25 +32,34 @@
   --color-grid-dot: #e3e5e9;
 
   /* Marca y acento */
-  --color-femsa: #a32035;
-  --color-accent: #1b4b8f;
-  --color-accent-hover: #163c73;
-  --color-accent-bg: #eef3fa;
-  --color-accent-soft: #dce7f4;
-  --color-accent-line: #b9cde6;
+  --color-femsa: #862633;
+  --color-accent: #356bd1;
+  --color-accent-hover: #2a5bb8;
+  --color-accent-bg: #f2f5fc;
+  --color-accent-soft: #e2eaf8;
+  --color-accent-line: #becff0;
+
+  /* Paleta de colores corporativa FEMSA (guía de identidad, agosto 2021) */
+  --color-femsa-coral: #ff585d;
+  --color-femsa-red: #bf4246;
+  --color-femsa-gray: #d9d9d6;
+  --color-femsa-blue: #5c88da;
+  --color-femsa-orange: #ff7f32;
+  --color-femsa-purple: #8e3a80;
+  --color-femsa-green: #6cc24a;
 
   /* Estados */
-  --color-amber: #92610c;
-  --color-amber-bg: #fdf6e7;
-  --color-amber-line: #ebd9b0;
-  --color-amber-strong: #e0c27a;
-  --color-green: #166534;
-  --color-green-bg: #edf7f0;
-  --color-green-line: #c4e3ce;
-  --color-red: #9b1c1c;
-  --color-red-bg: #fdf0f0;
-  --color-red-line: #e8c4c4;
-  --color-red-soft: #b98080;
+  --color-amber: #ba4f0f;
+  --color-amber-bg: #fef4ee;
+  --color-amber-line: #f9ceb4;
+  --color-amber-strong: #f7a16e;
+  --color-green: #43802b;
+  --color-green-bg: #f3faf1;
+  --color-green-line: #c4e7b7;
+  --color-red: #bf4246;
+  --color-red-bg: #faf0f0;
+  --color-red-line: #e5b3b5;
+  --color-red-soft: #d98e90;
 
   /* Escala tipográfica del mockup */
   --text-micro: 9.5px;
@@ -86,94 +95,63 @@
   button {
     @apply cursor-pointer;
   }
+
+  /* Foco del teclado */
+  :focus-visible {
+    outline: 2px solid var(--color-femsa);
+    outline-offset: 2px;
+  }
 }
 
-@layer components {
-  /*
-   * Media queries del reto.
-   * Se aplican en general desde aquí y solo ajustan piezas específicas cuando una vista lo necesita.
-   */
+/*
+ * Media queries del reto.*/
 
-  /* Full HD: 1920 x 1080 */
-  @media (min-width: 1600px) and (max-width: 1999px) {
-    .app-shell {
-      max-width: 1440px;
-    }
+/*
+ * En pantallas grandes el layout se expande a todo el ancho (max-width: none) y zoom escala
+ * toda la interfaz (texto, espacios, anchos fijos y el canvas) en la misma proporción.
+ * Con zoom, 100vh se multiplica por el factor, así que se divide entre él para llenar justo la pantalla.
+ */
 
-    .app-topbar {
-      padding-inline: 28px;
-    }
+/* Full HD: 1920 x 1080 */
+@media (min-width: 1600px) and (max-width: 1999px) {
+  .app-shell {
+    --screen-zoom: 1.125;
+    zoom: var(--screen-zoom);
+    max-width: none;
+    min-height: calc(100vh / var(--screen-zoom));
+  }
+}
+
+/* 2K / QHD: 2560 x 1440 */
+@media (min-width: 2000px) and (max-width: 2999px) {
+  .app-shell {
+    --screen-zoom: 1.333;
+    zoom: var(--screen-zoom);
+    max-width: none;
+    min-height: calc(100vh / var(--screen-zoom));
+  }
+}
+
+/* Ultrawide: 3440 x 1440 y relaciones cercanas a 21:9 */
+@media (min-width: 2400px) and (min-aspect-ratio: 21/9) {
+  .app-shell {
+    --screen-zoom: 1.333;
+    zoom: var(--screen-zoom);
+    max-width: none;
+    min-height: calc(100vh / var(--screen-zoom));
   }
 
-  /* 2K / QHD: 2560 x 1440 */
-  @media (min-width: 2000px) and (max-width: 2999px) {
-    .app-shell {
-      max-width: 1720px;
-      grid-template-columns: 260px 1fr;
-    }
-
-    .app-topbar {
-      height: 58px;
-      padding-inline: 32px;
-    }
-
-    .workflow-flow-grid {
-      grid-template-columns: 1fr 340px;
-    }
-
-    .responsive-table th,
-    .responsive-table td {
-      padding-inline: 18px;
-    }
+  .workflow-flow-grid {
+    grid-template-columns: minmax(0, 1fr) 380px;
   }
+}
 
-  /* Ultrawide: 3440 x 1440 y relaciones cercanas a 21:9 */
-  @media (min-width: 2400px) and (min-aspect-ratio: 21/9) {
-    .app-shell {
-      max-width: 1880px;
-      grid-template-columns: 272px 1fr;
-    }
-
-    .workflow-flow-grid {
-      grid-template-columns: minmax(0, 1fr) 380px;
-    }
-
-    .workflow-canvas {
-      margin-inline: 36px;
-    }
-  }
-
-  /* 4K: 3840 x 2160 */
-  @media (min-width: 3000px) {
-    .app-shell {
-      max-width: 2200px;
-      grid-template-columns: 300px 1fr;
-    }
-
-    .app-topbar {
-      height: 64px;
-      padding-inline: 40px;
-    }
-
-    .app-main {
-      font-size: 15px;
-    }
-
-    .workflow-flow-grid {
-      grid-template-columns: minmax(0, 1fr) 420px;
-    }
-
-    .workflow-canvas {
-      margin-block: 36px;
-      margin-inline: 44px;
-      transform: scale(1.12);
-      transform-origin: top left;
-    }
-
-    .responsive-table th,
-    .responsive-table td {
-      padding-inline: 20px;
-      padding-block: 13px;
-    }
+/* 4K: 3840 x 2160 (16:9; el max-aspect-ratio deja fuera al ultrawide 3440 x 1440) */
+@media (min-width: 3000px) and (max-aspect-ratio: 21/9) {
+  .app-shell {
+    --screen-zoom: 2;
+    zoom: var(--screen-zoom);
+    max-width: none;
+    min-height: calc(100vh / var(--screen-zoom));
   }
 }

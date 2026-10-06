@@ -3,11 +3,13 @@ import { NavLink } from "react-router";
 import { cn } from "@/shared/lib/cn";
 import type { NavItem } from "../../navigation";
 
-const itemClassName = (active: boolean, nested: boolean) =>
+const itemClassName = (active: boolean, nested: boolean, parent: boolean) =>
   cn(
     "mb-px flex w-full items-center gap-2 rounded-[5px] px-2 text-left text-ink-2",
     nested ? "py-[5px] text-body-sm/[normal]" : "py-1.5 text-body/[normal]",
-    active ? "bg-accent-bg font-medium text-accent" : "hover:bg-nav-hover",
+    active && parent && "font-medium text-accent hover:bg-nav-hover",
+    active && !parent && "bg-accent-bg font-medium text-accent",
+    !active && "hover:bg-nav-hover",
   );
 
 function ItemContent({ item, active }: { item: NavItem; active: boolean }) {
@@ -38,14 +40,14 @@ function ItemContent({ item, active }: { item: NavItem; active: boolean }) {
 export function NavItemLink({ item, nested = false }: { item: NavItem; nested?: boolean }): ReactNode {
   if (!item.to) {
     return (
-      <button type="button" className={itemClassName(false, nested)} title="Próximamente">
+      <button type="button" className={itemClassName(false, nested, false)} title="Próximamente">
         <ItemContent item={item} active={false} />
       </button>
     );
   }
 
   return (
-    <NavLink to={item.to} className={({ isActive }) => itemClassName(isActive, nested)}>
+    <NavLink to={item.to} className={({ isActive }) => itemClassName(isActive, nested, Boolean(item.children))}>
       {({ isActive }) => <ItemContent item={item} active={isActive} />}
     </NavLink>
   );
