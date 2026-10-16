@@ -5,10 +5,3 @@ dist/
 .env
 .env.*
 !.env.example
-
-# Cypress
-cypress/screenshots/
-cypress/videos/
-
-# Vercel
-.vercel

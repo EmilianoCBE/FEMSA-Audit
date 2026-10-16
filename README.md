@@ -1,9 +1,5 @@
 # FEMSA Auditoría Interna — App Builder
 
-[![CI](https://github.com/EmilianoCBE/FEMSA-Audit/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/EmilianoCBE/FEMSA-Audit/actions/workflows/ci.yml)
-
-**Producción:** <https://femsa-audit.vercel.app> · **Staging:** <https://femsa-audit-staging.vercel.app>
-
 Plataforma propia de FEMSA para reemplazar Archer Audit Risk. Este repositorio contiene el frontend del **App Builder**
 (Workflow + Designer) y la base visual compartida.
 
@@ -18,19 +14,8 @@ Plataforma propia de FEMSA para reemplazar Archer Audit Risk. Este repositorio c
 ```bash
 npm install
 npm run dev          # web en :5173
+npm run build        # typecheck + build
 ```
-
-**Importante:** primero levanta el backend (con su `.env` y un usuario que exista en la BD) y después el front.
-
-| Script | Qué hace |
-| --- | --- |
-| `npm run dev` | Servidor de desarrollo en :5173 |
-| `npm run build` | Typecheck + build de producción |
-| `npm run preview` | Sirve el build en :4173 (lo usa Cypress) |
-| `npm run format` | Da formato a todo con Biome |
-| `npm run check` | Lint + formato sin modificar archivos (lo mismo que el CI) |
-| `npm test` / `npm run test:watch` | Pruebas unitarias (Vitest) |
-| `npm run cy:open` / `npm run test:e2e` | Pruebas E2E con Cypress, con interfaz o en consola (requiere `npm run preview` corriendo) |
 
 En desarrollo, Vite reenvía `/api` a `http://127.0.0.1:3000`. Levanta la API desde
 [FEMSA-Audit-Backend](https://github.com/EmilianoCBE/FEMSA-Audit-Backend) con `npm run dev` (ahí está cómo configurar
@@ -39,27 +24,6 @@ En desarrollo, Vite reenvía `/api` a `http://127.0.0.1:3000`. Levanta la API de
 La aplicación requiere iniciar sesión en `/login`. Consulta [la configuración de autenticación](https://github.com/EmilianoCBE/FEMSA-Audit-Backend/blob/main/AUTH.md)
 para crear el esquema y usuarios en SQL y habilitar Microsoft Entra ID. El resto de los módulos conserva sus datos mock
 detrás de sus servicios (`features/*/services/`).
-
-## Despliegue (CI/CD)
-
-El sitio se publica en **Vercel** únicamente desde GitHub Actions (`.github/workflows/ci.yml`); los despliegues
-automáticos de Vercel están desactivados en `vercel.json`.
-
-| Evento | Qué corre |
-| --- | --- |
-| PR a `develop` o `main` | Lint, tipos, unitarias, build y Cypress → **preview** propio del PR (la URL se comenta en el PR) → Cypress contra el preview |
-| Merge a `develop` | Lo anterior → deploy a **staging** → prueba de humo → Cypress contra el sitio publicado |
-| Merge a `main` (release) | Lo mismo, pero a **producción** |
-
-Secrets del repo: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`. Si un deploy sale mal: Vercel → proyecto →
-*Deployments* → *Instant Rollback* (o `vercel rollback`).
-
-## Pruebas
-
-- **Unitarias (Vitest):** junto al archivo que prueban, `archivo.test.ts`. Prioridad: funciones puras de `lib/` y servicios.
-- **E2E (Cypress):** en `cypress/e2e/*.cy.ts`. No usan backend ni Azure: cada prueba simula la API con `cy.intercept`
-  (ver `cypress/support/e2e.ts`); los datos de ejemplo van en `cypress/fixtures/`.
-- El CI (`.github/workflows/ci.yml`) corre lint, tipos, unitarias, build y Cypress en cada PR a `develop` o `main`.
 
 ## Arquitectura
 
@@ -129,7 +93,7 @@ estructura, endpoints y cómo agregar tablas.
 3. **API (cuando haya tablas):** se implementa en el repo [FEMSA-Audit-Backend](https://github.com/EmilianoCBE/FEMSA-Audit-Backend).
 4. **Pantalla o tab nueva:** tab → entrada en `tabs.tsx`; pantalla → `features/<modulo>/routes.tsx`,
    ruta en `shared/routing/routes.ts`, registro en `app/router.tsx` y `to` en `app/navigation.ts`.
-5. Agrega pruebas y sigue el flujo de ramas y PRs de [CONTRIBUTING.md](CONTRIBUTING.md).
+5. Corre `npm run build` antes de subir cambios.
 
 ### Mapa de historias
 
@@ -151,3 +115,8 @@ estructura, endpoints y cómo agregar tablas.
 | US14 | Leonel | `web: designer/panels/PermissionsPanel.tsx`, `web: features/auth` |
 | US15–US17 | Emiliano Carrizales | `web: workflow/components/inspector/DesignAssistantPanel.tsx` |
 | US18 | Karla Alessandra | `web: workflow/components/inspector/DesignAssistantPanel.tsx` |
+
+
+### Importante 
+### Recuerden agregar el .env al backend y usar un usuario y contraseña que este en la bd
+### Si no lo habian agregado darle save y correr primero el back y luego el front. 
