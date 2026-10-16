@@ -133,7 +133,7 @@
 }
 
 /* Ultrawide: 3440 x 1440 y relaciones cercanas a 21:9 */
-@media (min-width: 2400px) and (min-aspect-ratio: 21/9) {
+@media (min-width: 2400px) and (min-aspect-ratio: 21 / 9) {
   .app-shell {
     --screen-zoom: 1.333;
     zoom: var(--screen-zoom);
@@ -147,7 +147,7 @@
 }
 
 /* 4K: 3840 x 2160 (16:9; el max-aspect-ratio deja fuera al ultrawide 3440 x 1440) */
-@media (min-width: 3000px) and (max-aspect-ratio: 21/9) {
+@media (min-width: 3000px) and (max-aspect-ratio: 21 / 9) {
   .app-shell {
     --screen-zoom: 2;
     zoom: var(--screen-zoom);

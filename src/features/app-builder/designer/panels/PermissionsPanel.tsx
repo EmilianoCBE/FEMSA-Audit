@@ -17,7 +17,10 @@ export function PermissionsPanel() {
   const handlePermissionChange = useCallback(
     async (fieldId: string, roleId: RoleId, level: PermissionLevel) => {
       setSaveError(undefined);
-      setData((current) => current && { ...current, permissions: updatePermission(current.permissions, fieldId, roleId, level) });
+      setData(
+        (current) =>
+          current && { ...current, permissions: updatePermission(current.permissions, fieldId, roleId, level) },
+      );
       try {
         await designerService.updatePermission(fieldId, roleId, level);
       } catch (error) {

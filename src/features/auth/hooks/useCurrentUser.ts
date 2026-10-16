@@ -1,4 +1,4 @@
-import { useAuth } from '../AuthProvider';
+import { useAuth } from "../AuthProvider";
 import type { User } from "../types";
 
 /**
@@ -8,6 +8,6 @@ import type { User } from "../types";
  */
 export function useCurrentUser(): User {
   const { user } = useAuth();
-  if (!user) throw new Error('No hay una sesión activa.');
+  if (!user) throw new Error("No hay una sesión activa.");
   return user;
 }

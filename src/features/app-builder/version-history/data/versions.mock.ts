@@ -16,7 +16,10 @@ export const versionsMock: AppVersion[] = [
     publishedAt: "2026-08-10T00:00:00.000Z",
     status: "current",
     author: "Alicia Alemán",
-    changes: ["Se hizo obligatorio el campo Control asociado", "Se agregó la validación de 90 días para severidad alta"],
+    changes: [
+      "Se hizo obligatorio el campo Control asociado",
+      "Se agregó la validación de 90 días para severidad alta",
+    ],
   },
   {
     id: "v4",

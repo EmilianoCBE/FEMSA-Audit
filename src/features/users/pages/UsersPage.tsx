@@ -1,12 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Search, Users as UsersIcon } from "lucide-react";
 import { ApiError } from "@/shared/api/httpClient";
-import {
-  ContentArea,
-  EmptyState,
-  Page,
-  PageHeader,
-} from "@/shared/ui";
+import { ContentArea, EmptyState, Page, PageHeader } from "@/shared/ui";
 import { usersService } from "../services/usersService";
 import type { Role, User } from "../types";
 
@@ -25,10 +20,7 @@ export function UsersPage() {
       setError(null);
 
       try {
-        const [usersData, rolesData] = await Promise.all([
-          usersService.list(),
-          usersService.roles(),
-        ]);
+        const [usersData, rolesData] = await Promise.all([usersService.list(), usersService.roles()]);
 
         setUsers(usersData);
         setRoles(rolesData);
@@ -82,8 +74,7 @@ export function UsersPage() {
             ...user,
             role_id: roleId,
             role_name: newRole?.name ?? user.role_name,
-            role_description:
-              newRole?.description ?? user.role_description,
+            role_description: newRole?.description ?? user.role_description,
           };
         }),
       );
@@ -130,9 +121,7 @@ export function UsersPage() {
           <div>
             <div className="flex items-center gap-2 text-body-sm font-medium text-ink">
               <UsersIcon size={17} />
-              {loading
-                ? "Cargando usuarios..."
-                : `${users.length} usuario${users.length === 1 ? "" : "s"}`}
+              {loading ? "Cargando usuarios..." : `${users.length} usuario${users.length === 1 ? "" : "s"}`}
             </div>
 
             {!loading && search && (
@@ -144,10 +133,7 @@ export function UsersPage() {
           </div>
 
           <div className="relative w-full desktop:w-[300px]">
-            <Search
-              size={16}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted"
-            />
+            <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
 
             <input
               type="search"
@@ -171,9 +157,7 @@ export function UsersPage() {
           <EmptyState
             title="No se encontraron usuarios"
             description={
-              search
-                ? "Intenta con otro nombre, correo o rol."
-                : "No hay usuarios registrados para mostrar."
+              search ? "Intenta con otro nombre, correo o rol." : "No hay usuarios registrados para mostrar."
             }
           />
         ) : (
@@ -201,17 +185,10 @@ export function UsersPage() {
 
               <tbody>
                 {filteredUsers.map((user) => (
-                  <tr
-                    key={user.user_id}
-                    className="hover:bg-row-hover"
-                  >
+                  <tr key={user.user_id} className="hover:bg-row-hover">
                     <td className="border-b border-line px-3.5 py-3 align-middle">
-                      <div className="font-medium text-ink">
-                        {user.full_name}
-                      </div>
-                      <div className="mt-0.5 text-control text-muted">
-                        Usuario #{user.user_id}
-                      </div>
+                      <div className="font-medium text-ink">{user.full_name}</div>
+                      <div className="mt-0.5 text-control text-muted">Usuario #{user.user_id}</div>
                     </td>
 
                     <td className="border-b border-line px-3.5 py-3 align-middle text-body-sm text-ink-2">
@@ -226,9 +203,7 @@ export function UsersPage() {
                             : "inline-flex items-center rounded-full border border-line-2 px-2 py-1 text-control text-muted"
                         }
                       >
-                        <span className="mr-1.5">
-                          {user.is_active ? "●" : "○"}
-                        </span>
+                        <span className="mr-1.5">{user.is_active ? "●" : "○"}</span>
                         {user.is_active ? "Activo" : "Inactivo"}
                       </span>
                     </td>
@@ -237,29 +212,19 @@ export function UsersPage() {
                       <select
                         value={user.role_id}
                         disabled={savingUserId === user.user_id}
-                        onChange={(event) =>
-                          void handleRoleChange(
-                            user.user_id,
-                            Number(event.target.value),
-                          )
-                        }
+                        onChange={(event) => void handleRoleChange(user.user_id, Number(event.target.value))}
                         aria-label={`Rol de ${user.full_name}`}
                         className="w-full max-w-[240px] rounded-[5px] border border-line-2 bg-surface px-2.5 py-2 text-body-sm text-ink outline-none focus:border-accent disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         {roles.map((role) => (
-                          <option
-                            key={role.role_id}
-                            value={role.role_id}
-                          >
+                          <option key={role.role_id} value={role.role_id}>
                             {role.name}
                           </option>
                         ))}
                       </select>
 
                       {savingUserId === user.user_id && (
-                        <div className="mt-1 text-control text-muted">
-                          Guardando...
-                        </div>
+                        <div className="mt-1 text-control text-muted">Guardando...</div>
                       )}
                     </td>
                   </tr>

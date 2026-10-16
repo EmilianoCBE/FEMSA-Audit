@@ -34,7 +34,12 @@ const OPCIONES_ELEMENTOS_DESIGNER: Array<{
   { type: "section", label: "Adjunto", description: "Adjunto · multiple", grupo: "avanzados" },
   { type: "catalog", label: "Usuario / rol", description: "Usuario del area auditada", grupo: "avanzados" },
   { type: "catalog", label: "Referencia", description: "Referencia a catalogo", grupo: "avanzados" },
-  { type: "calculated", label: "Campo calculado", description: "Calculado · severidad x probabilidad", grupo: "avanzados" },
+  {
+    type: "calculated",
+    label: "Campo calculado",
+    description: "Calculado · severidad x probabilidad",
+    grupo: "avanzados",
+  },
 ];
 
 const TIPO_BADGE_DESIGNER: Record<ElementoDesigner["type"], string> = {
@@ -68,7 +73,10 @@ const normalizarElementoDesigner = (elementoDesigner: ElementoDesigner, indiceDe
     description: elementoDesigner.config.description ?? descripcionPorTipoDesigner(elementoDesigner.type),
     editable: elementoDesigner.config.editable ?? false,
     includeInReports: elementoDesigner.config.includeInReports ?? false,
-    visibleStates: (elementoDesigner.config.visibleStates as string[] | undefined) ?? ["revision", "validacion_jefatura"],
+    visibleStates: (elementoDesigner.config.visibleStates as string[] | undefined) ?? [
+      "revision",
+      "validacion_jefatura",
+    ],
     ...elementoDesigner.config,
   },
 });
@@ -104,7 +112,9 @@ export function FieldsPanel() {
 
   const elementosDesigner = plantillaDesignerActual?.elements ?? [];
   const campoSeleccionadoDesigner = useMemo(
-    () => elementosDesigner.find((elementoDesigner) => elementoDesigner.id === campoSeleccionadoDesignerId) ?? elementosDesigner[0],
+    () =>
+      elementosDesigner.find((elementoDesigner) => elementoDesigner.id === campoSeleccionadoDesignerId) ??
+      elementosDesigner[0],
     [campoSeleccionadoDesignerId, elementosDesigner],
   );
 
@@ -130,7 +140,10 @@ export function FieldsPanel() {
     );
   };
 
-  const agregarCampoDesigner = (tipoDesigner: ElementoDesigner["type"], seccionDesigner: SeccionDesigner = "evaluacion") => {
+  const agregarCampoDesigner = (
+    tipoDesigner: ElementoDesigner["type"],
+    seccionDesigner: SeccionDesigner = "evaluacion",
+  ) => {
     const opcionDesigner = OPCIONES_ELEMENTOS_DESIGNER.find((opcionDesigner) => opcionDesigner.type === tipoDesigner);
     const nuevoCampoDesigner: ElementoDesigner = {
       id: `campo_designer_${tipoDesigner}_${Date.now()}`,
@@ -164,7 +177,9 @@ export function FieldsPanel() {
     setMensajeDesigner(undefined);
     setErrorDesigner(undefined);
     try {
-      const plantillaDesigner = normalizarPlantillaDesigner(await designerService.getPlantillaDesigner(plantillaDesignerId));
+      const plantillaDesigner = normalizarPlantillaDesigner(
+        await designerService.getPlantillaDesigner(plantillaDesignerId),
+      );
       setPlantillaDesignerActual(plantillaDesigner);
       setCampoSeleccionadoDesignerId(plantillaDesigner.elements[0]?.id);
       setTieneCambiosDesigner(false);
@@ -196,7 +211,9 @@ export function FieldsPanel() {
     setMensajeDesigner(undefined);
     setErrorDesigner(undefined);
     try {
-      const plantillaDesigner = normalizarPlantillaDesigner(await designerService.getPlantillaDesigner(plantillaDesignerActual.id));
+      const plantillaDesigner = normalizarPlantillaDesigner(
+        await designerService.getPlantillaDesigner(plantillaDesignerActual.id),
+      );
       setPlantillaDesignerActual(plantillaDesigner);
       setCampoSeleccionadoDesignerId(plantillaDesigner.elements[0]?.id);
       setTieneCambiosDesigner(false);
@@ -233,18 +250,33 @@ export function FieldsPanel() {
         description={
           <div>
             <h2 className="mb-1 text-title-sm font-semibold text-ink">Formulario de hallazgo</h2>
-            <p>Define los campos que captura un hallazgo, sus validaciones y en que estados del workflow son visibles o editables.</p>
+            <p>
+              Define los campos que captura un hallazgo, sus validaciones y en que estados del workflow son visibles o
+              editables.
+            </p>
           </div>
         }
-        action={<Button variant="primary" onClick={crearPlantillaDesigner}>Nueva plantilla</Button>}
+        action={
+          <Button variant="primary" onClick={crearPlantillaDesigner}>
+            Nueva plantilla
+          </Button>
+        }
       />
 
       <div className="mb-4 border-b border-line">
         <div className="flex gap-8 text-body-sm">
-          <button type="button" className="border-b-2 border-accent px-1 pb-3 font-medium text-accent">Campos</button>
-          <button type="button" className="px-1 pb-3 text-muted">Diseno por rol</button>
-          <button type="button" className="px-1 pb-3 text-muted">Validaciones</button>
-          <button type="button" className="px-1 pb-3 text-muted">Historial de versiones</button>
+          <button type="button" className="border-b-2 border-accent px-1 pb-3 font-medium text-accent">
+            Campos
+          </button>
+          <button type="button" className="px-1 pb-3 text-muted">
+            Diseno por rol
+          </button>
+          <button type="button" className="px-1 pb-3 text-muted">
+            Validaciones
+          </button>
+          <button type="button" className="px-1 pb-3 text-muted">
+            Historial de versiones
+          </button>
         </div>
       </div>
 
@@ -270,18 +302,32 @@ export function FieldsPanel() {
                 </select>
               </div>
 
-              <PaletaDesigner grupoDesigner="basicos" tituloDesigner="Campos basicos" onAgregarDesigner={agregarCampoDesigner} />
-              <PaletaDesigner grupoDesigner="avanzados" tituloDesigner="Avanzados" onAgregarDesigner={agregarCampoDesigner} />
+              <PaletaDesigner
+                grupoDesigner="basicos"
+                tituloDesigner="Campos basicos"
+                onAgregarDesigner={agregarCampoDesigner}
+              />
+              <PaletaDesigner
+                grupoDesigner="avanzados"
+                tituloDesigner="Avanzados"
+                onAgregarDesigner={agregarCampoDesigner}
+              />
             </aside>
 
             <main className="min-h-[680px] p-6">
               {errorDesigner && (
-                <div role="alert" className="mb-3 rounded-md border border-red-line bg-red-bg px-3 py-2 text-body-sm text-red">
+                <div
+                  role="alert"
+                  className="mb-3 rounded-md border border-red-line bg-red-bg px-3 py-2 text-body-sm text-red"
+                >
                   {errorDesigner}
                 </div>
               )}
               {mensajeDesigner && (
-                <div role="status" className="mb-3 rounded-md border border-green-line bg-green-bg px-3 py-2 text-body-sm text-green">
+                <div
+                  role="status"
+                  className="mb-3 rounded-md border border-green-line bg-green-bg px-3 py-2 text-body-sm text-green"
+                >
                   {mensajeDesigner}
                 </div>
               )}
@@ -351,22 +397,24 @@ function PaletaDesigner({
     <div className="mb-5">
       <h3 className="mb-2 text-label font-semibold uppercase text-muted">{tituloDesigner}</h3>
       <div className="space-y-2">
-        {OPCIONES_ELEMENTOS_DESIGNER.filter((opcionDesigner) => opcionDesigner.grupo === grupoDesigner).map((opcionDesigner) => (
-          <button
-            key={`${grupoDesigner}-${opcionDesigner.label}`}
-            type="button"
-            draggable
-            className="flex w-full items-center gap-2 rounded-md border border-line bg-surface px-3 py-2 text-left text-body-sm text-ink-2 hover:border-accent hover:text-accent"
-            onClick={() => onAgregarDesigner(opcionDesigner.type)}
-            onDragStart={(event) => {
-              event.dataTransfer.setData("application/femsa-designer", opcionDesigner.type);
-              event.dataTransfer.effectAllowed = "copy";
-            }}
-          >
-            <span className="text-muted">::</span>
-            <span>{opcionDesigner.label}</span>
-          </button>
-        ))}
+        {OPCIONES_ELEMENTOS_DESIGNER.filter((opcionDesigner) => opcionDesigner.grupo === grupoDesigner).map(
+          (opcionDesigner) => (
+            <button
+              key={`${grupoDesigner}-${opcionDesigner.label}`}
+              type="button"
+              draggable
+              className="flex w-full items-center gap-2 rounded-md border border-line bg-surface px-3 py-2 text-left text-body-sm text-ink-2 hover:border-accent hover:text-accent"
+              onClick={() => onAgregarDesigner(opcionDesigner.type)}
+              onDragStart={(event) => {
+                event.dataTransfer.setData("application/femsa-designer", opcionDesigner.type);
+                event.dataTransfer.effectAllowed = "copy";
+              }}
+            >
+              <span className="text-muted">::</span>
+              <span>{opcionDesigner.label}</span>
+            </button>
+          ),
+        )}
       </div>
     </div>
   );
@@ -505,7 +553,10 @@ function PanelConfiguracionDesigner({
       <div className="space-y-2 border-b border-line py-4">
         <div className="text-label font-semibold uppercase text-muted">Visibilidad por estado</div>
         {ESTADOS_WORKFLOW_DESIGNER.map((estadoDesigner) => (
-          <label key={estadoDesigner.id} className="flex items-center gap-2 border-b border-line py-2 text-body-sm text-ink-2 last:border-b-0">
+          <label
+            key={estadoDesigner.id}
+            className="flex items-center gap-2 border-b border-line py-2 text-body-sm text-ink-2 last:border-b-0"
+          >
             <input
               type="checkbox"
               checked={visibleStatesDesigner.includes(estadoDesigner.id)}
@@ -564,13 +615,55 @@ function normalizarPlantillaDesigner(plantillaDesigner: PlantillaDesigner): Plan
 
 function crearCamposBaseDesigner(): ElementoDesigner[] {
   return [
-    crearCampoBaseDesigner("titulo_hallazgo", "short-text", "Titulo del hallazgo", "Texto corto · max. 120 caracteres", "identificacion", true),
-    crearCampoBaseDesigner("control_asociado", "catalog", "Control asociado", "Referencia al Catalogo de controles", "identificacion", true),
-    crearCampoBaseDesigner("tipo_hallazgo", "catalog", "Tipo de hallazgo", "Diseno · Efectividad · Cumplimiento", "identificacion", true),
-    crearCampoBaseDesigner("descripcion_condicion", "long-text", "Descripcion y condicion", "Texto largo · editor enriquecido", "evaluacion", true),
-    crearCampoBaseDesigner("evidencia_soporte", "section", "Evidencia de soporte", "Adjunto · multiple · hasta 1 GB por archivo", "evaluacion", true),
+    crearCampoBaseDesigner(
+      "titulo_hallazgo",
+      "short-text",
+      "Titulo del hallazgo",
+      "Texto corto · max. 120 caracteres",
+      "identificacion",
+      true,
+    ),
+    crearCampoBaseDesigner(
+      "control_asociado",
+      "catalog",
+      "Control asociado",
+      "Referencia al Catalogo de controles",
+      "identificacion",
+      true,
+    ),
+    crearCampoBaseDesigner(
+      "tipo_hallazgo",
+      "catalog",
+      "Tipo de hallazgo",
+      "Diseno · Efectividad · Cumplimiento",
+      "identificacion",
+      true,
+    ),
+    crearCampoBaseDesigner(
+      "descripcion_condicion",
+      "long-text",
+      "Descripcion y condicion",
+      "Texto largo · editor enriquecido",
+      "evaluacion",
+      true,
+    ),
+    crearCampoBaseDesigner(
+      "evidencia_soporte",
+      "section",
+      "Evidencia de soporte",
+      "Adjunto · multiple · hasta 1 GB por archivo",
+      "evaluacion",
+      true,
+    ),
     {
-      ...crearCampoBaseDesigner("riesgo_residual", "calculated", "Riesgo residual", "Calculado · severidad x probabilidad", "evaluacion", false),
+      ...crearCampoBaseDesigner(
+        "riesgo_residual",
+        "calculated",
+        "Riesgo residual",
+        "Calculado · severidad x probabilidad",
+        "evaluacion",
+        false,
+      ),
       config: {
         label: "Riesgo residual",
         section: "evaluacion",
@@ -582,8 +675,22 @@ function crearCamposBaseDesigner(): ElementoDesigner[] {
         visibleStates: ["revision", "validacion_jefatura", "validacion_direccion", "cerrado"],
       },
     },
-    crearCampoBaseDesigner("responsable_plan", "catalog", "Responsable del plan", "Usuario del area auditada", "remediacion", true),
-    crearCampoBaseDesigner("fecha_compromiso", "date", "Fecha compromiso", "Fecha · no menor a hoy", "remediacion", true),
+    crearCampoBaseDesigner(
+      "responsable_plan",
+      "catalog",
+      "Responsable del plan",
+      "Usuario del area auditada",
+      "remediacion",
+      true,
+    ),
+    crearCampoBaseDesigner(
+      "fecha_compromiso",
+      "date",
+      "Fecha compromiso",
+      "Fecha · no menor a hoy",
+      "remediacion",
+      true,
+    ),
   ];
 }
 

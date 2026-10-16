@@ -10,8 +10,16 @@ type VariantStyle = {
 
 /** Estilo visual por tipo de transición. Un nuevo tipo solo requiere una entrada aquí. */
 const VARIANT_STYLES: Record<TransitionVariant, VariantStyle> = {
-  default: { path: "stroke-muted-2 [stroke-width:1.4]", label: "fill-muted", arrow: "stroke-muted-2 [stroke-width:1.6]" },
-  active: { path: "stroke-accent [stroke-width:1.8]", label: "fill-accent font-medium", arrow: "stroke-accent [stroke-width:1.8]" },
+  default: {
+    path: "stroke-muted-2 [stroke-width:1.4]",
+    label: "fill-muted",
+    arrow: "stroke-muted-2 [stroke-width:1.6]",
+  },
+  active: {
+    path: "stroke-accent [stroke-width:1.8]",
+    label: "fill-accent font-medium",
+    arrow: "stroke-accent [stroke-width:1.8]",
+  },
   rejected: {
     path: "stroke-red-soft [stroke-width:1.4] [stroke-dasharray:4_3]",
     label: "fill-red",
@@ -66,7 +74,12 @@ export function WorkflowTransitions({ size, transitions }: WorkflowTransitionsPr
         const style = VARIANT_STYLES[transition.variant];
         return (
           <g key={transition.id}>
-            <path d={transition.path} fill="none" className={style.path} markerEnd={`url(#${markerId(transition.variant)})`} />
+            <path
+              d={transition.path}
+              fill="none"
+              className={style.path}
+              markerEnd={`url(#${markerId(transition.variant)})`}
+            />
             <text
               x={transition.labelPosition.x}
               y={transition.labelPosition.y}

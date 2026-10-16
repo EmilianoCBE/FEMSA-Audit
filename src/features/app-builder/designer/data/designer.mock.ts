@@ -16,15 +16,37 @@ export const permissionMatrixMock: PermissionMatrixData = {
     { id: "auditee", label: "Área auditada" },
   ],
   permissions: [
-    { fieldId: "title", fieldName: "Título del hallazgo", levels: { auditor: "edit", manager: "edit", director: "read", auditee: "read" } },
-    { fieldId: "control", fieldName: "Control asociado", levels: { auditor: "edit", manager: "edit", director: "read", auditee: "read" } },
-    { fieldId: "residual-risk", fieldName: "Riesgo residual", levels: { auditor: "edit", manager: "edit", director: "read", auditee: "read" } },
-    { fieldId: "internal-notes", fieldName: "Notas internas", levels: { auditor: "edit", manager: "read", director: "read", auditee: "hidden" } },
+    {
+      fieldId: "title",
+      fieldName: "Título del hallazgo",
+      levels: { auditor: "edit", manager: "edit", director: "read", auditee: "read" },
+    },
+    {
+      fieldId: "control",
+      fieldName: "Control asociado",
+      levels: { auditor: "edit", manager: "edit", director: "read", auditee: "read" },
+    },
+    {
+      fieldId: "residual-risk",
+      fieldName: "Riesgo residual",
+      levels: { auditor: "edit", manager: "edit", director: "read", auditee: "read" },
+    },
+    {
+      fieldId: "internal-notes",
+      fieldName: "Notas internas",
+      levels: { auditor: "edit", manager: "read", director: "read", auditee: "hidden" },
+    },
   ],
 };
 
 export const validationRulesMock: ValidationRule[] = [
-  { id: "title-length", fieldName: "Título del hallazgo", condition: "longitud <= 120", message: "El título no puede exceder 120 caracteres.", active: true },
+  {
+    id: "title-length",
+    fieldName: "Título del hallazgo",
+    condition: "longitud <= 120",
+    message: "El título no puede exceder 120 caracteres.",
+    active: true,
+  },
   {
     id: "control-exists",
     fieldName: "Control asociado",
@@ -32,7 +54,13 @@ export const validationRulesMock: ValidationRule[] = [
     message: "Selecciona un control vigente del catálogo.",
     active: true,
   },
-  { id: "due-date-future", fieldName: "Fecha compromiso", condition: "fecha >= hoy", message: "La fecha compromiso no puede ser anterior a hoy.", active: true },
+  {
+    id: "due-date-future",
+    fieldName: "Fecha compromiso",
+    condition: "fecha >= hoy",
+    message: "La fecha compromiso no puede ser anterior a hoy.",
+    active: true,
+  },
   {
     id: "risk-justification",
     fieldName: "Riesgo residual",

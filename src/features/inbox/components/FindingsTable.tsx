@@ -25,18 +25,27 @@ export function FindingsTable({ findings, onOpen }: FindingsTableProps) {
       render: (finding) => (
         <>
           {finding.title}
-          <div className="mt-0.5 text-meta text-muted">{finding.businessUnit} · {finding.auditName}</div>
+          <div className="mt-0.5 text-meta text-muted">
+            {finding.businessUnit} · {finding.auditName}
+          </div>
         </>
       ),
     },
     { id: "status", header: "Estado", width: 150, render: (finding) => <FindingStatusBadge status={finding.status} /> },
-    { id: "severity", header: "Severidad", width: 140, render: (finding) => <SeverityIndicator severity={finding.severity} /> },
+    {
+      id: "severity",
+      header: "Severidad",
+      width: 140,
+      render: (finding) => <SeverityIndicator severity={finding.severity} />,
+    },
     {
       id: "waiting",
       header: "Esperando",
       width: 110,
       render: (finding) => (
-        <span className={cn("text-body-sm", isOverdue(finding) && "font-medium text-red")}>{formatWaiting(finding)}</span>
+        <span className={cn("text-body-sm", isOverdue(finding) && "font-medium text-red")}>
+          {formatWaiting(finding)}
+        </span>
       ),
     },
     {
