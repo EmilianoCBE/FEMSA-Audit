@@ -1,84 +1,34 @@
-import { useId, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { useEffect, useId, useRef, useState } from "react";
+import { ChevronDown, Maximize2, X } from "lucide-react";
 import { cn } from "@/shared/lib/cn";
 import { Eyebrow } from "@/shared/ui";
 import { VersionStatusBadge } from "../../version-history/components/VersionStatusBadge";
 import { versionsMock } from "../../version-history/data/versions.mock";
-import { findingLifecycleMock } from "../data/workflow.mock";
-import type { Point, WorkflowDiagram, WorkflowState } from "../types";
+import { findingLifecycleMock, workflowRulesMock } from "../data/workflow.mock";
+import {
+  getActiveRules,
+  getBranches,
+  getReferenceDiagram,
+  getSequenceSummary,
+  hasFlow,
+  lowerFirst,
+} from "../lib/processSummary";
 import { WorkflowStateNode } from "./canvas/WorkflowStateNode";
 import { WorkflowTransitions } from "./canvas/WorkflowTransitions";
 
 /** Estado guardado del panel */
 const STORAGE_KEY = "femsa-audit:embedded-workflow-expanded";
 
-/** Medidas del diagrama */
-const NODE_SIZE = { width: 152, height: 60 };
-const NODE_SNAP = 10;
-const DIAGRAM_PADDING = 20;
-
-/** Diagrama de solo lectura */
-function getReferenceDiagram(diagram: WorkflowDiagram) {
-  const bottom = Math.max(...diagram.states.map((state) => state.position.y + NODE_SIZE.height));
-  return {
-    size: { width: diagram.size.width, height: bottom + DIAGRAM_PADDING },
-    states: diagram.states,
-    transitions: diagram.transitions
-      .filter((transition) => transition.variant !== "suggested")
-      .map((transition) =>
-        transition.variant === "active" ? { ...transition, variant: "default" as const } : transition,
-      ),
-  };
-}
-
-/** Secuencia principal */
-function getMainSequence({ states }: WorkflowDiagram) {
-  const mainRow = Math.min(...states.map((state) => state.position.y));
-  return states.filter((state) => state.position.y === mainRow).sort((a, b) => a.position.x - b.position.x);
-}
-
-/** Inicio y fin de una flecha */
-function getPathEnds(path: string): [Point, Point] | null {
-  const numbers = path.match(/-?\d+(\.\d+)?/g)?.map(Number);
-  if (!numbers || numbers.length < 4) return null;
-  return [
-    { x: numbers[0], y: numbers[1] },
-    { x: numbers[numbers.length - 2], y: numbers[numbers.length - 1] },
-  ];
-}
-
-/** Estado en un punto */
-function findStateAt(states: readonly WorkflowState[], point: Point) {
-  return states.find(
-    ({ position }) =>
-      point.x >= position.x - NODE_SNAP &&
-      point.x <= position.x + NODE_SIZE.width + NODE_SNAP &&
-      point.y >= position.y - NODE_SNAP &&
-      point.y <= position.y + NODE_SIZE.height + NODE_SNAP,
-  );
-}
-
-/** Desvíos del flujo */
-function getBranches(diagram: WorkflowDiagram) {
-  const sequence = getMainSequence(diagram);
-  return diagram.transitions.flatMap((transition) => {
-    const ends = getPathEnds(transition.path);
-    if (!ends) return [];
-    const from = findStateAt(diagram.states, ends[0]);
-    const to = findStateAt(diagram.states, ends[1]);
-    if (!from || !to) return [];
-    if (sequence.includes(from) && sequence.indexOf(to) === sequence.indexOf(from) + 1) return [];
-    return [{ id: transition.id, label: transition.label, from, to, returns: sequence.includes(to) }];
-  });
-}
+/** Escala de la miniatura de la esquina */
+const MINI_SCALE = 0.35;
 
 /** Datos del mock */
+const flowConfigured = hasFlow(findingLifecycleMock);
 const referenceDiagram = getReferenceDiagram(findingLifecycleMock);
 const branches = getBranches(findingLifecycleMock);
-const sequenceSummary = getMainSequence(findingLifecycleMock)
-  .map((state) => state.name)
-  .join(" → ");
+const sequenceSummary = getSequenceSummary(findingLifecycleMock);
 const sampleVersion = versionsMock.find((version) => version.status === "draft") ?? versionsMock[0];
+const activeRules = getActiveRules(findingLifecycleMock, workflowRulesMock);
 
 /** Leer y guardar estado del panel */
 function readExpanded() {
@@ -97,10 +47,141 @@ function saveExpanded(expanded: boolean) {
   }
 }
 
+/** Diagrama de solo lectura */
+function ReferenceDiagram() {
+  return (
+    <div
+      role="img"
+      aria-label={`Diagrama del flujo: ${sequenceSummary}`}
+      className="relative"
+      style={{ width: referenceDiagram.size.width, height: referenceDiagram.size.height }}
+    >
+      <WorkflowTransitions size={referenceDiagram.size} transitions={referenceDiagram.transitions} />
+      {referenceDiagram.states.map((state) => (
+        <WorkflowStateNode key={state.id} state={state} />
+      ))}
+    </div>
+  );
+}
+
+/** Versión del flujo */
+function VersionLabel() {
+  return (
+    <span className="ml-auto flex flex-none items-center gap-1.5 text-label text-muted">
+      {sampleVersion.version}
+      <VersionStatusBadge status={sampleVersion.status} />
+    </span>
+  );
+}
+
+/** Diagrama (o aviso si no hay flujo), desvíos y reglas */
+function ProcessContent() {
+  return (
+    <>
+      {flowConfigured ? (
+        <div tabIndex={0} className="overflow-x-auto">
+          <ReferenceDiagram />
+        </div>
+      ) : (
+        <p className="px-3.5 py-6 text-center text-body-sm text-muted">
+          Este formulario aún no tiene un flujo configurado.
+        </p>
+      )}
+      {/* Desvíos y reglas lado a lado (apilados en pantallas chicas) */}
+      {(branches.length > 0 || activeRules.length > 0) && (
+        <div className="grid divide-y divide-line-soft border-t border-line-soft desktop:auto-cols-fr desktop:grid-flow-col desktop:divide-x desktop:divide-y-0">
+          {/* Desvíos */}
+          {branches.length > 0 && (
+            <div className="px-3.5 py-2.5">
+              <Eyebrow className="mb-1">Desvíos ({branches.length})</Eyebrow>
+              <ul className="flex max-h-28 flex-col gap-0.5 overflow-y-auto text-meta text-muted">
+                {branches.map((branch) => (
+                  <li key={branch.id}>
+                    Desde <span className="font-medium text-ink-2">{branch.from.name}</span> se puede{" "}
+                    <span className="font-medium text-ink-2">{branch.label}</span> y{" "}
+                    {branch.returns ? "regresa" : "pasa"} a{" "}
+                    <span className="font-medium text-ink-2">{branch.to.name}</span>.
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {/* Reglas */}
+          {activeRules.length > 0 && (
+            <div className="px-3.5 py-2.5">
+              <Eyebrow className="mb-1">Reglas ({activeRules.length})</Eyebrow>
+              <ul className="flex max-h-28 flex-col gap-0.5 overflow-y-auto text-meta text-muted">
+                {activeRules.map((rule) => (
+                  <li key={rule.id}>
+                    <span className="font-medium text-ink-2">{rule.name}</span>: {lowerFirst(rule.condition)} →{" "}
+                    <span className="font-medium text-ink-2">{lowerFirst(rule.action)}</span>.
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+    </>
+  );
+}
+
+/** Miniatura en la esquina; al picarle abre el flujo en grande */
+function WorkflowMiniature({ onOpen }: { onOpen: () => void }) {
+  return (
+    // Entra con fade y un deslizamiento corto (sin animación si el sistema pide movimiento reducido)
+    <div className="fixed top-4 right-4 z-20 rounded-md border border-accent-line bg-surface p-2.5 shadow-lg transition duration-200 ease-out hover:border-accent starting:-translate-y-2 starting:opacity-0 motion-reduce:transition-none">
+      <div className="flex items-center gap-2">
+        <Eyebrow size="sm">Flujo del proceso</Eyebrow>
+        <Maximize2 aria-hidden className="ml-auto size-3 text-muted" />
+      </div>
+      {/* Solo el diagrama, en escritorio */}
+      <div aria-hidden className="mt-1.5 hidden desktop:block">
+        {flowConfigured ? (
+          <div
+            className="overflow-hidden"
+            style={{
+              width: referenceDiagram.size.width * MINI_SCALE,
+              height: referenceDiagram.size.height * MINI_SCALE,
+            }}
+          >
+            <div className="origin-top-left" style={{ transform: `scale(${MINI_SCALE})` }}>
+              <ReferenceDiagram />
+            </div>
+          </div>
+        ) : (
+          <p className="text-meta text-muted">Sin flujo configurado</p>
+        )}
+      </div>
+      {/* Toda la tarjeta abre el flujo */}
+      <button
+        type="button"
+        aria-label="Ver flujo del proceso en grande"
+        onClick={onOpen}
+        className="absolute inset-0 rounded-md"
+      />
+    </div>
+  );
+}
+
 /** Panel del flujo del proceso (US05) */
 export function EmbeddedWorkflowPanel() {
   const [expanded, setExpanded] = useState(readExpanded);
+  const [scrolledPast, setScrolledPast] = useState(false);
   const contentId = useId();
+  const panelRef = useRef<HTMLElement>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+
+  // Mostrar la miniatura solo cuando el panel quedó arriba, fuera de la pantalla
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!panel) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      setScrolledPast(!entry.isIntersecting && entry.boundingClientRect.top < 0);
+    });
+    observer.observe(panel);
+    return () => observer.disconnect();
+  }, []);
 
   function toggle() {
     const next = !expanded;
@@ -110,7 +191,7 @@ export function EmbeddedWorkflowPanel() {
 
   return (
     <div className="px-4 pt-5 desktop:px-6">
-      <section className="rounded-md border border-line bg-surface">
+      <section ref={panelRef} className="rounded-md border border-line bg-surface">
         {/* Barra */}
         <div className="flex items-center gap-2 px-3.5 py-2">
           <Eyebrow size="sm" className="flex-none">
@@ -118,15 +199,12 @@ export function EmbeddedWorkflowPanel() {
           </Eyebrow>
           {!expanded && (
             <p className="min-w-0 truncate text-meta text-muted">
-              {sequenceSummary}
+              {flowConfigured ? sequenceSummary : "Sin flujo configurado"}
               {branches.length > 0 && ` · ${branches.length} ${branches.length === 1 ? "desvío" : "desvíos"}`}
+              {activeRules.length > 0 && ` · ${activeRules.length} ${activeRules.length === 1 ? "regla" : "reglas"}`}
             </p>
           )}
-          {/* Versión */}
-          <span className="ml-auto flex flex-none items-center gap-1.5 text-label text-muted">
-            {sampleVersion.version}
-            <VersionStatusBadge status={sampleVersion.status} />
-          </span>
+          <VersionLabel />
           <button
             type="button"
             aria-expanded={expanded}
@@ -140,38 +218,34 @@ export function EmbeddedWorkflowPanel() {
           </button>
         </div>
         <div id={contentId} hidden={!expanded} className="border-t border-line">
-          {/* Diagrama */}
-          <div tabIndex={0} className="overflow-x-auto">
-            <div
-              role="img"
-              aria-label={`Diagrama del flujo: ${sequenceSummary}`}
-              className="relative"
-              style={{ width: referenceDiagram.size.width, height: referenceDiagram.size.height }}
-            >
-              <WorkflowTransitions size={referenceDiagram.size} transitions={referenceDiagram.transitions} />
-              {referenceDiagram.states.map((state) => (
-                <WorkflowStateNode key={state.id} state={state} />
-              ))}
-            </div>
-          </div>
-          {/* Desvíos */}
-          {branches.length > 0 && (
-            <div className="border-t border-line-soft px-3.5 py-2.5">
-              <Eyebrow className="mb-1">Desvíos</Eyebrow>
-              <ul className="flex flex-col gap-0.5 text-meta text-muted">
-                {branches.map((branch) => (
-                  <li key={branch.id}>
-                    Desde <span className="font-medium text-ink-2">{branch.from.name}</span> se puede{" "}
-                    <span className="font-medium text-ink-2">{branch.label}</span> y{" "}
-                    {branch.returns ? "regresa" : "pasa"} a{" "}
-                    <span className="font-medium text-ink-2">{branch.to.name}</span>.
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+          <ProcessContent />
         </div>
       </section>
+
+      {scrolledPast && <WorkflowMiniature onOpen={() => dialogRef.current?.showModal()} />}
+
+      {/* Flujo en grande sin salir de donde va el usuario (Esc o clic fuera lo cierra) */}
+      <dialog
+        ref={dialogRef}
+        aria-label="Flujo del proceso"
+        onClick={(event) => event.target === dialogRef.current && dialogRef.current.close()}
+        className="m-auto w-[min(1080px,calc(100vw-32px))] rounded-md border border-line bg-surface p-0 backdrop:bg-ink/40"
+      >
+        <div className="flex items-center gap-2 border-b border-line px-3.5 py-2">
+          <Eyebrow size="sm">Flujo del proceso</Eyebrow>
+          <VersionLabel />
+          <button
+            type="button"
+            aria-label="Cerrar flujo del proceso"
+            title="Cerrar"
+            onClick={() => dialogRef.current?.close()}
+            className="flex-none rounded p-1 text-muted hover:bg-bg hover:text-ink-2"
+          >
+            <X className="size-3.5" />
+          </button>
+        </div>
+        <ProcessContent />
+      </dialog>
     </div>
   );
 }
