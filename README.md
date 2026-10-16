@@ -1,5 +1,9 @@
 # FEMSA Auditoría Interna — App Builder
 
+[![CI](https://github.com/EmilianoCBE/FEMSA-Audit/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/EmilianoCBE/FEMSA-Audit/actions/workflows/ci.yml)
+
+**Producción:** <https://femsa-audit.vercel.app> · **Staging:** <https://femsa-audit-staging.vercel.app>
+
 Plataforma propia de FEMSA para reemplazar Archer Audit Risk. Este repositorio contiene el frontend del **App Builder**
 (Workflow + Designer) y la base visual compartida.
 
@@ -35,6 +39,20 @@ En desarrollo, Vite reenvía `/api` a `http://127.0.0.1:3000`. Levanta la API de
 La aplicación requiere iniciar sesión en `/login`. Consulta [la configuración de autenticación](https://github.com/EmilianoCBE/FEMSA-Audit-Backend/blob/main/AUTH.md)
 para crear el esquema y usuarios en SQL y habilitar Microsoft Entra ID. El resto de los módulos conserva sus datos mock
 detrás de sus servicios (`features/*/services/`).
+
+## Despliegue (CI/CD)
+
+El sitio se publica en **Vercel** únicamente desde GitHub Actions (`.github/workflows/ci.yml`); los despliegues
+automáticos de Vercel están desactivados en `vercel.json`.
+
+| Evento | Qué corre |
+| --- | --- |
+| PR a `develop` o `main` | Lint, tipos, unitarias, build y Cypress. No despliega |
+| Merge a `develop` | Lo anterior → deploy a **staging** → prueba de humo → Cypress contra el sitio publicado |
+| Merge a `main` (release) | Lo mismo, pero a **producción** |
+
+Secrets del repo: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`. Si un deploy sale mal: Vercel → proyecto →
+*Deployments* → *Instant Rollback* (o `vercel rollback`).
 
 ## Pruebas
 

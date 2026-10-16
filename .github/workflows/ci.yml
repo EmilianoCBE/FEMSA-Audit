@@ -8,7 +8,13 @@ on:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  # En PRs se cancela la corrida anterior; en develop/main nunca se corta un despliegue a medias.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  VERCEL_CLI: vercel@64.3.1
+  # Alias fijo para staging (develop). Producción usa el dominio de producción del proyecto.
+  STAGING_ALIAS: femsa-audit-staging.vercel.app
 
 jobs:
   calidad:
@@ -51,5 +57,74 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: cypress-screenshots
+          path: cypress/screenshots
+          if-no-files-found: ignore
+
+  deploy:
+    name: Deploy a ${{ github.ref_name == 'main' && 'producción' || 'staging' }} (Vercel)
+    runs-on: ubuntu-latest
+    needs: [calidad, e2e]
+    # Solo despliega lo que ya entró a develop o main; los PRs únicamente se validan.
+    if: github.event_name == 'push'
+    environment:
+      name: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
+      url: ${{ steps.publicar.outputs.url }}
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      VERCEL_TELEMETRY_DISABLED: 1
+      PROD: ${{ github.ref_name == 'main' }}
+    outputs:
+      url: ${{ steps.publicar.outputs.url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Instalar Vercel CLI
+        run: npm install --global "$VERCEL_CLI"
+      - name: Descargar configuración del proyecto
+        run: vercel pull --yes --environment=${{ github.ref_name == 'main' && 'production' || 'preview' }} --token=${{ secrets.VERCEL_TOKEN }}
+      - name: Build
+        run: vercel build ${{ github.ref_name == 'main' && '--prod' || '' }} --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          CYPRESS_INSTALL_BINARY: 0
+      - name: Publicar
+        id: publicar
+        run: |
+          if [ "$PROD" = "true" ]; then
+            url=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})
+          else
+            url=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})
+            vercel alias set "$url" "$STAGING_ALIAS" --token=${{ secrets.VERCEL_TOKEN }}
+            url="https://$STAGING_ALIAS"
+          fi
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "### Desplegado en $url" >> "$GITHUB_STEP_SUMMARY"
+      - name: Prueba de humo (responde y sirve la app)
+        run: |
+          curl --fail --silent --show-error --retry 5 --retry-delay 5 "${{ steps.publicar.outputs.url }}" | grep -q '<div id="root">'
+          curl --fail --silent --show-error -o /dev/null "${{ steps.publicar.outputs.url }}/login"
+
+  verificar:
+    name: Pruebas E2E sobre el sitio desplegado
+    runs-on: ubuntu-latest
+    needs: deploy
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Cypress contra ${{ needs.deploy.outputs.url }}
+        uses: cypress-io/github-action@v6
+        with:
+          config: baseUrl=${{ needs.deploy.outputs.url }}
+      - name: Capturas de pruebas fallidas
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-screenshots-desplegado
           path: cypress/screenshots
           if-no-files-found: ignore
