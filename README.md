@@ -47,7 +47,7 @@ automáticos de Vercel están desactivados en `vercel.json`.
 
 | Evento | Qué corre |
 | --- | --- |
-| PR a `develop` o `main` | Lint, tipos, unitarias, build y Cypress. No despliega |
+| PR a `develop` o `main` | Lint, tipos, unitarias, build y Cypress → **preview** propio del PR (la URL se comenta en el PR) → Cypress contra el preview |
 | Merge a `develop` | Lo anterior → deploy a **staging** → prueba de humo → Cypress contra el sitio publicado |
 | Merge a `main` (release) | Lo mismo, pero a **producción** |
 

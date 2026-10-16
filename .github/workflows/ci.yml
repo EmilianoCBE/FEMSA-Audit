@@ -107,20 +107,77 @@ jobs:
           curl --fail --silent --show-error --retry 5 --retry-delay 5 "${{ steps.publicar.outputs.url }}" | grep -q '<div id="root">'
           curl --fail --silent --show-error -o /dev/null "${{ steps.publicar.outputs.url }}/login"
 
-  verificar:
-    name: Pruebas E2E sobre el sitio desplegado
+  preview:
+    name: Preview del PR (Vercel)
     runs-on: ubuntu-latest
-    needs: deploy
+    needs: [calidad, e2e]
+    # Solo PRs de ramas del mismo repo (los forks no tienen acceso a los secrets).
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: read
+      pull-requests: write
+    environment:
+      name: preview
+      url: ${{ steps.publicar.outputs.url }}
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      VERCEL_TELEMETRY_DISABLED: 1
+    outputs:
+      url: ${{ steps.publicar.outputs.url }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
           cache: npm
-      - name: Cypress contra ${{ needs.deploy.outputs.url }}
+      - name: Instalar Vercel CLI
+        run: npm install --global "$VERCEL_CLI"
+      - name: Descargar configuración del proyecto
+        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+      - name: Build
+        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          CYPRESS_INSTALL_BINARY: 0
+      - name: Publicar preview
+        id: publicar
+        run: |
+          url=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "### Preview del PR: $url" >> "$GITHUB_STEP_SUMMARY"
+      - name: Comentar la URL en el PR
+        uses: actions/github-script@v7
+        env:
+          PREVIEW_URL: ${{ steps.publicar.outputs.url }}
+        with:
+          script: |
+            const marker = "<!-- vercel-preview -->";
+            const body = `${marker}\n🔎 **Preview de este PR:** ${process.env.PREVIEW_URL}\n\nCommit \`${context.sha.slice(0, 7)}\` · lint, tipos, pruebas unitarias y Cypress en verde. Cypress se vuelve a correr contra esta URL.`;
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number });
+            const previo = comments.find((c) => c.body?.includes(marker));
+            if (previo) await github.rest.issues.updateComment({ owner, repo, comment_id: previo.id, body });
+            else await github.rest.issues.createComment({ owner, repo, issue_number, body });
+
+  verificar:
+    name: Pruebas E2E sobre el sitio desplegado
+    runs-on: ubuntu-latest
+    needs: [deploy, preview]
+    # Corre después del deploy (develop/main) o del preview (PR), el que se haya ejecutado.
+    if: always() && (needs.deploy.result == 'success' || needs.preview.result == 'success')
+    env:
+      URL_PUBLICADA: ${{ needs.deploy.outputs.url || needs.preview.outputs.url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Cypress contra el sitio publicado
         uses: cypress-io/github-action@v6
         with:
-          config: baseUrl=${{ needs.deploy.outputs.url }}
+          config: baseUrl=${{ env.URL_PUBLICADA }}
       - name: Capturas de pruebas fallidas
         if: failure()
         uses: actions/upload-artifact@v4
