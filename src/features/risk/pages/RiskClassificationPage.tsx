@@ -210,7 +210,7 @@ export function RiskClassificationPage() {
   return (
     <Page>
       <PageHeader
-        title="Risk Management"
+        title="Clasificación de riesgos"
         description="Evalúa y clasifica los riesgos registrados en el catálogo de FEMSA."
       />
 

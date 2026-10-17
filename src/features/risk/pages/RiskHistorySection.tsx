@@ -1,4 +1,3 @@
-
 import { useEffect, useState, type ReactNode } from "react";
 import {
   AlertCircle,
@@ -10,6 +9,7 @@ import {
   ChevronUp,
   GitCompareArrows,
   History,
+  PieChart,
   RefreshCw,
   Search,
   X,
@@ -127,8 +127,524 @@ function BarList({
   );
 }
 
+
+function RiskDonut({
+  items,
+}: {
+  items: { label: string; count: number }[];
+}) {
+ const levels = [
+  { label: "Bajo", color: "#00854A" },
+  { label: "Medio", color: "#D6A62E" },
+  { label: "Alto", color: "#64748B" },
+  { label: "Crítico", color: "#A61B29" },
+];
+
+  const counts = levels.map((level) => ({
+    ...level,
+    count: Math.max(
+      0,
+      Number(
+        items.find((item) => item.label === level.label)?.count ?? 0
+      )
+    ),
+  }));
+
+  const total = counts.reduce((sum, item) => sum + item.count, 0);
+  const radius = 48;
+  const circumference = 2 * Math.PI * radius;
+
+  let accumulated = 0;
+
+  return (
+    <section className="min-w-0 rounded-md border border-line bg-surface p-4">
+      <div className="mb-4 flex items-center gap-2">
+        <span className="text-accent">
+          <PieChart size={18} />
+        </span>
+        <h3 className="m-0 text-body font-semibold text-ink">
+          Distribución por nivel de riesgo
+        </h3>
+      </div>
+
+      {total === 0 ? (
+        <p className="py-5 text-center text-body-sm text-muted">
+          No hay evaluaciones para mostrar con los filtros seleccionados.
+        </p>
+      ) : (
+        <div className="flex flex-col items-center gap-5 sm:flex-row sm:justify-around">
+          <div className="relative w-full max-w-[190px] shrink-0">
+            <svg
+              viewBox="0 0 120 120"
+              className="h-auto w-full"
+              role="img"
+              aria-label={`Distribución de ${total} evaluaciones por nivel de riesgo`}
+            >
+              <circle
+                cx="60"
+                cy="60"
+                r={radius}
+                fill="none"
+                stroke="currentColor"
+                strokeOpacity="0.10"
+                strokeWidth="16"
+              />
+
+              {counts.map((item) => {
+                const segmentLength = (item.count / total) * circumference;
+                const offset = accumulated;
+                accumulated += segmentLength;
+
+                if (item.count === 0) return null;
+
+                return (
+                  <circle
+                    key={item.label}
+                    cx="60"
+                    cy="60"
+                    r={radius}
+                    fill="none"
+                    stroke={item.color}
+                    strokeWidth="16"
+                    strokeDasharray={`${segmentLength} ${circumference - segmentLength}`}
+                    strokeDashoffset={-offset}
+                    transform="rotate(-90 60 60)"
+                  >
+                    <title>
+                      {item.label}: {item.count} evaluaciones (
+                      {((item.count / total) * 100).toFixed(1)}%)
+                    </title>
+                  </circle>
+                );
+              })}
+            </svg>
+
+            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-2xl font-bold text-ink">{total}</span>
+              <span className="text-xs text-muted">Evaluaciones</span>
+            </div>
+          </div>
+
+          <div className="w-full space-y-3">
+            {counts.map((item) => (
+              <div
+                key={item.label}
+                className="flex items-center justify-between gap-3"
+              >
+                <div className="flex min-w-0 items-center gap-2">
+                  <span
+                    className="h-3 w-3 shrink-0 rounded-sm"
+                    style={{ backgroundColor: item.color }}
+                  />
+                  <span className="text-body-sm text-ink">
+                    {item.label}
+                  </span>
+                </div>
+
+                <div className="shrink-0 text-right">
+                  <span className="text-body-sm font-semibold text-ink">
+                    {item.count}
+                  </span>
+                  <span className="ml-2 text-xs text-muted">
+                    {((item.count / total) * 100).toFixed(0)}%
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+
+function DepartmentRiskChart({
+  items,
+}: {
+  items: { department: string; level: string; count: number }[];
+}) {
+  const levels = [
+    { label: "Bajo", color: "#00854A" },
+    { label: "Medio", color: "#D6A62E" },
+    { label: "Alto", color: "#64748B" },
+    { label: "Crítico", color: "#A61B29" },
+  ];
+
+  const departments = Array.from(
+    items.reduce((map, item) => {
+      const department = item.department || "Sin departamento";
+
+      if (!map.has(department)) {
+        map.set(department, {
+          department,
+          Bajo: 0,
+          Medio: 0,
+          Alto: 0,
+          Crítico: 0,
+        });
+      }
+
+      const row = map.get(department);
+
+      if (!row) return map;
+      const level = item.level as "Bajo" | "Medio" | "Alto" | "Crítico";
+
+      if (level in row) {
+        row[level] += Number(item.count) || 0;
+      }
+
+      return map;
+    }, new Map<string, {
+      department: string;
+      Bajo: number;
+      Medio: number;
+      Alto: number;
+      Crítico: number;
+    }>())
+      .values()
+  ).sort((a, b) => {
+    const totalA = a.Bajo + a.Medio + a.Alto + a.Crítico;
+    const totalB = b.Bajo + b.Medio + b.Alto + b.Crítico;
+    return totalB - totalA;
+  });
+
+  const maxTotal = Math.max(
+    1,
+    ...departments.map(
+      (d) => d.Bajo + d.Medio + d.Alto + d.Crítico
+    )
+  );
+
+  return (
+    <section className="min-w-0 rounded-md border border-line bg-surface p-4">
+      <div className="mb-4 flex items-center gap-2">
+        <span className="text-accent">
+          <BarChart3 size={18} />
+        </span>
+        <h3 className="m-0 text-body font-semibold text-ink">
+          Evaluaciones por departamento y nivel de riesgo
+        </h3>
+      </div>
+
+      <div className="mb-5 flex flex-wrap gap-x-4 gap-y-2">
+        {levels.map((level) => (
+          <div key={level.label} className="flex items-center gap-2">
+            <span
+              className="h-3 w-3 rounded-sm"
+              style={{ backgroundColor: level.color }}
+            />
+            <span className="text-xs text-muted">{level.label}</span>
+          </div>
+        ))}
+      </div>
+
+      {departments.length === 0 ? (
+        <p className="py-5 text-center text-body-sm text-muted">
+          No hay evaluaciones para mostrar con los filtros seleccionados.
+        </p>
+      ) : (
+        <div className="space-y-5">
+          {departments.map((department) => {
+            const total =
+              department.Bajo +
+              department.Medio +
+              department.Alto +
+              department.Crítico;
+
+            return (
+              <div key={department.department}>
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <span className="min-w-0 truncate text-body-sm text-ink">
+                    {department.department}
+                  </span>
+                  <span className="shrink-0 text-xs font-semibold text-muted">
+                    {total}
+                  </span>
+                </div>
+
+                <div
+                  className="flex h-5 w-full overflow-hidden rounded-sm bg-surface-secondary"
+                  role="img"
+                  aria-label={`${department.department}: ${total} evaluaciones`}
+                >
+                  {levels.map((level) => {
+                    const count =
+                      department[
+                        level.label as "Bajo" | "Medio" | "Alto" | "Crítico"
+                      ];
+
+                    if (count === 0 || total === 0) return null;
+
+                    return (
+                      <div
+                        key={level.label}
+                        title={`${level.label}: ${count}`}
+                        style={{
+                          width: `${(count / maxTotal) * 100}%`,
+                          backgroundColor: level.color,
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </section>
+  );
+}
+
+
+function LineTrend({
+  items,
+}: {
+  items: { month: string; count: number }[];
+}) {
+  const width = 520;
+  const height = 190;
+  const paddingX = 30;
+  const paddingTop = 20;
+  const paddingBottom = 42;
+  const chartHeight = height - paddingTop - paddingBottom;
+  const chartWidth = width - paddingX * 2;
+
+  const maxValue = Math.max(1, ...items.map((item) => item.count));
+
+  const points = items.map((item, index) => {
+    const x =
+      items.length === 1
+        ? width / 2
+        : paddingX + (index / (items.length - 1)) * chartWidth;
+
+    const y = paddingTop + chartHeight - (item.count / maxValue) * chartHeight;
+
+    return { ...item, x, y };
+  });
+
+  const linePoints = points.map((point) => `${point.x},${point.y}`).join(" ");
+
+  return (
+    <section className="min-w-0 rounded-md border border-line bg-surface p-4">
+      <div className="mb-4 flex items-center gap-2">
+        <span className="text-accent">
+          <CalendarClock size={18} />
+        </span>
+        <h3 className="m-0 text-body font-semibold text-ink">
+          Tendencia mensual
+        </h3>
+      </div>
+
+      {items.length === 0 ? (
+        <p className="py-5 text-center text-body-sm text-muted">
+          No hay datos para los filtros seleccionados.
+        </p>
+      ) : (
+        <>
+          <div className="overflow-x-auto">
+            <svg
+              viewBox={`0 0 ${width} ${height}`}
+              className="h-auto w-full min-w-[300px]"
+              role="img"
+              aria-label="Gráfica de línea de evaluaciones por mes"
+            >
+              {[0, 0.5, 1].map((fraction) => {
+                const y = paddingTop + chartHeight * fraction;
+                const value = Math.round(maxValue * (1 - fraction));
+
+                return (
+                  <g key={fraction}>
+                    <line
+                      x1={paddingX}
+                      y1={y}
+                      x2={width - paddingX}
+                      y2={y}
+                      stroke="currentColor"
+                      strokeOpacity="0.12"
+                      strokeDasharray="4 4"
+                    />
+                    <text
+                      x={paddingX - 8}
+                      y={y + 4}
+                      textAnchor="end"
+                      fontSize="10"
+                      fill="currentColor"
+                    >
+                      {value}
+                    </text>
+                  </g>
+                );
+              })}
+
+              {points.length > 1 && (
+                <polyline
+                  points={linePoints}
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinejoin="round"
+                  strokeLinecap="round"
+                  className="text-accent"
+                />
+              )}
+
+              {points.map((point) => (
+                <g key={point.month}>
+                  <circle
+                    cx={point.x}
+                    cy={point.y}
+                    r="4"
+                    fill="currentColor"
+                    className="text-accent"
+                  >
+                    <title>
+                      {formatMonth(point.month)}: {point.count} evaluaciones
+                    </title>
+                  </circle>
+
+                  <text
+                    x={point.x}
+                    y={height - 16}
+                    textAnchor="middle"
+                    fontSize="10"
+                    fill="currentColor"
+                  >
+                    {formatMonth(point.month)}
+                  </text>
+                </g>
+              ))}
+            </svg>
+          </div>
+
+          <p className="mt-2 text-xs text-muted">
+            Cada punto representa el total de evaluaciones del mes indicado.
+          </p>
+        </>
+      )}
+    </section>
+  );
+}
+
+
+function getRiskLevel(score: number) {
+  if (score <= 4) return "Bajo";
+  if (score <= 9) return "Medio";
+  if (score <= 16) return "Alto";
+  return "Crítico";
+}
+
+function RiskMatrix({
+  data = [],
+}: {
+  data?: RiskEvaluationSummary["riskMatrix"];
+}) {
+  const probabilities = [5, 4, 3, 2, 1];
+  const impacts = [1, 2, 3, 4, 5];
+
+  function getCount(probability: number, impact: number) {
+    return data.find(
+      (item) =>
+        Number(item.probability) === probability &&
+        Number(item.impact) === impact
+    )?.count ?? 0;
+  }
+
+  return (
+    <section className="min-w-0 rounded-md border border-line bg-surface p-4">
+      <div className="mb-4">
+        <h3 className="m-0 text-body font-semibold text-ink">
+          Matriz de probabilidad e impacto
+        </h3>
+        <p className="mt-1 text-body-sm text-muted">
+          Puntaje y cantidad de evaluaciones registradas para cada combinación.
+        </p>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table
+          className="w-full min-w-[420px] border-separate border-spacing-1 text-center"
+          aria-label="Matriz de riesgos por probabilidad e impacto"
+        >
+          <thead>
+            <tr>
+              <th scope="col" className="w-24 px-1 py-2 text-xs font-medium text-muted">
+                Prob. / Impacto
+              </th>
+              {impacts.map((impact) => (
+                <th
+                  key={impact}
+                  scope="col"
+                  className="px-1 py-2 text-xs font-semibold text-ink"
+                >
+                  {impact}
+                </th>
+              ))}
+            </tr>
+          </thead>
+
+          <tbody>
+            {probabilities.map((probability) => (
+              <tr key={probability}>
+                <th scope="row" className="px-2 py-1 text-xs font-semibold text-ink">
+                  {probability}
+                </th>
+
+                {impacts.map((impact) => {
+                  const score = probability * impact;
+                  const level = getRiskLevel(score);
+                  const count = getCount(probability, impact);
+
+                  return (
+                    <td key={impact} className="p-0">
+                      <div
+                        title={`Probabilidad: ${probability}, impacto: ${impact}, puntaje: ${score}, nivel: ${level}, evaluaciones: ${count}`}
+                        className={`flex min-h-[72px] flex-col items-center justify-center rounded-md border p-1 ${levelStyle(level)}`}
+                      >
+                        <span className="text-base font-bold">{score}</span>
+                        <span className="text-[10px] font-medium">{level}</span>
+                        <span className="mt-1 text-xs font-semibold">
+                          {count} {count === 1 ? "registro" : "registros"}
+                        </span>
+                      </div>
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        {[
+          { label: "Bajo", range: "1–4" },
+          { label: "Medio", range: "5–9" },
+          { label: "Alto", range: "10–16" },
+          { label: "Crítico", range: "17–25" },
+        ].map((item) => (
+          <span
+            key={item.label}
+            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${levelStyle(item.label)}`}
+          >
+            {item.label} ({item.range})
+          </span>
+        ))}
+      </div>
+
+      <p className="mt-3 text-xs text-muted">
+        Los números grandes representan el puntaje de riesgo. El número inferior
+        representa la cantidad de evaluaciones registradas para esa combinación
+        de probabilidad e impacto. Los datos respetan los filtros aplicados.
+      </p>
+    </section>
+  );
+}
+
+
 export function RiskHistorySection({ refreshKey = 0 }: Props) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(true);
 
   const [draft, setDraft] = useState<RiskEvaluationFilters>({
     search: "",
@@ -421,41 +937,37 @@ export function RiskHistorySection({ refreshKey = 0 }: Props) {
 
             <div className="rounded-md border border-line bg-nav p-4">
               <p className="m-0 text-body-sm text-muted">
-                Página actual
+                Puntaje promedio
               </p>
               <p className="mt-2 text-heading font-semibold text-ink">
-                {page} / {Math.max(1, totalPages)}
+                {loading && !summary
+                  ? "…"
+                  : `${Number(summary?.averageScore ?? 0).toFixed(1)}/25`}
               </p>
               <p className="mt-1 text-xs text-muted">
-                Registros mostrados abajo.
+                Promedio de los puntajes de las evaluaciones filtradas.
               </p>
             </div>
           </div>
 
+          
+          {/* Matriz de riesgos */}
+          <RiskMatrix data={summary?.riskMatrix ?? []} />
+
           {/* Gráficas */}
-          <div className="grid items-start gap-4 lg:grid-cols-3">
-            <BarList
-              title="Por nivel de riesgo"
-              icon={<BarChart3 size={18} />}
-              items={summary?.byLevel ?? []}
-            />
+          <div className="grid items-start gap-4 lg:grid-cols-2">
+            <LineTrend items={summary?.monthlyTrend ?? []} />
 
-            <BarList
-              title="Por departamento"
-              icon={<BarChart3 size={18} />}
-              items={summary?.byDepartment ?? []}
-            />
+            <RiskDonut items={summary?.byLevel ?? []} />
 
-            <BarList
-              title="Tendencia mensual"
-              icon={<CalendarClock size={18} />}
-              items={(summary?.monthlyTrend ?? []).map((item) => ({
-                label: formatMonth(item.month),
-                count: item.count,
-              }))}
-            />
+            <div className="lg:col-span-2">
+              <DepartmentRiskChart
+                items={summary?.byDepartmentLevel ?? []}
+              />
+            </div>
           </div>
 
+      
           {/* Filtros */}
           <section className="rounded-md border border-line p-4">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
@@ -1059,4 +1571,3 @@ export function RiskHistorySection({ refreshKey = 0 }: Props) {
     </section>
   );
 }
-

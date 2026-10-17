@@ -45,9 +45,23 @@ export type RiskEvaluationFilters = {
 
 export type RiskEvaluationSummary = {
   totalEvaluations: number;
+  averageScore: number;
+  highRisks: number;
+  criticalRisks: number;
   byLevel: { label: string; count: number }[];
   byDepartment: { label: string; count: number }[];
   monthlyTrend: { month: string; count: number }[];
+  riskMatrix: {
+    probability: number;
+    impact: number;
+    count: number;
+  }[];
+
+  byDepartmentLevel: {
+  department: string;
+  level: string;
+  count: number;
+}[];
 };
 
 export type RiskEvaluationComparisonResponse = {
@@ -132,5 +146,6 @@ export const riskService = {
       `/risk-evaluations/compare/${encodeURIComponent(riskLibraryId)}`
     ),
 };
+
 
 
