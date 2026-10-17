@@ -13,6 +13,7 @@ import { ApiError } from "@/shared/api/httpClient";
 import { ContentArea, Page, PageHeader } from "@/shared/ui";
 import { riskService } from "../services/riskService";
 import { riskLibraryService } from "../services/riskLibraryService";
+import { RiskHistorySection } from "./RiskHistorySection";
 import type { RiskClassification } from "../types";
 import type { RiskLibraryItem } from "../services/riskLibraryService";
 
@@ -66,8 +67,12 @@ export function RiskClassificationPage() {
   const [result, setResult] = useState<RiskClassification | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
   const [saving, setSaving] = useState(false);
-  const [saveMessage, setSaveMessage] = useState<string | null>(null);  
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
+
+  // Triggers a history/dashboard refresh after a successful save.
+  const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
 
   const [risks, setRisks] = useState<RiskLibraryItem[]>([]);
   const [libraryLoading, setLibraryLoading] = useState(true);
@@ -75,7 +80,7 @@ export function RiskClassificationPage() {
   const [search, setSearch] = useState("");
   const [department, setDepartment] = useState("");
 
-  // Load the risk library using the existing API service.
+  // Load the risk library.
   useEffect(() => {
     let cancelled = false;
 
@@ -98,7 +103,7 @@ export function RiskClassificationPage() {
           setLibraryError(
             err instanceof ApiError
               ? err.message
-              : "No se pudo cargar la biblioteca de riesgos.",
+              : "No se pudo cargar la biblioteca de riesgos."
           );
         }
       } finally {
@@ -115,7 +120,7 @@ export function RiskClassificationPage() {
     };
   }, [search, department]);
 
-  // Calculate only when a specific risk has been selected.
+  // Calculate the risk whenever the selected risk or its values change.
   useEffect(() => {
     let cancelled = false;
 
@@ -145,7 +150,7 @@ export function RiskClassificationPage() {
           setError(
             err instanceof ApiError
               ? err.message
-              : "No se pudo clasificar el riesgo.",
+              : "No se pudo clasificar el riesgo."
           );
         }
       } finally {
@@ -162,7 +167,6 @@ export function RiskClassificationPage() {
     };
   }, [selectedRisk?.risk_library_id, probability, impact]);
 
-  
   function selectRisk(risk: RiskLibraryItem) {
     setSelectedRisk(risk);
     setResult(null);
@@ -189,6 +193,9 @@ export function RiskClassificationPage() {
       setSaveMessage(
         "Evaluación guardada correctamente en la base de datos."
       );
+
+      // Refresh the history and dashboard after saving.
+      setHistoryRefreshKey((current) => current + 1);
     } catch (err) {
       setError(
         err instanceof ApiError
@@ -200,7 +207,6 @@ export function RiskClassificationPage() {
     }
   }
 
-
   return (
     <Page>
       <PageHeader
@@ -210,7 +216,6 @@ export function RiskClassificationPage() {
 
       <ContentArea>
         <div className="space-y-5">
-
           {/* Summary */}
           <section
             aria-label="Resumen de la biblioteca"
@@ -221,9 +226,11 @@ export function RiskClassificationPage() {
                 <BookOpen size={17} />
                 Riesgos en biblioteca
               </div>
+
               <div className="mt-2 text-heading font-semibold text-ink">
                 {libraryLoading ? "…" : risks.length}
               </div>
+
               <p className="mt-1 text-body-sm text-muted">
                 Resultados de la búsqueda actual.
               </p>
@@ -234,12 +241,14 @@ export function RiskClassificationPage() {
                 <ShieldAlert size={17} />
                 Riesgo seleccionado
               </div>
+
               <div
                 className="mt-2 truncate text-body font-semibold text-ink"
                 title={selectedRisk?.risk_name}
               >
                 {selectedRisk?.risk_library_id ?? "Ninguno"}
               </div>
+
               <p className="mt-1 truncate text-body-sm text-muted">
                 {selectedRisk?.risk_name ??
                   "Selecciona un riesgo para evaluarlo."}
@@ -247,9 +256,8 @@ export function RiskClassificationPage() {
             </div>
           </section>
 
-          {/* Two-column layout: library and evaluation */}
+          {/* Risk library and evaluation */}
           <div className="grid items-start gap-5 desktop:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
-
             {/* Risk library */}
             <section
               aria-labelledby="library-heading"
@@ -259,6 +267,7 @@ export function RiskClassificationPage() {
                 <div className="rounded-md border border-line bg-nav p-2 text-accent">
                   <BookOpen size={20} />
                 </div>
+
                 <div className="min-w-0">
                   <h2
                     id="library-heading"
@@ -266,6 +275,7 @@ export function RiskClassificationPage() {
                   >
                     Biblioteca de riesgos
                   </h2>
+
                   <p className="mt-1 text-body-sm text-muted">
                     Selecciona un riesgo para comenzar su evaluación.
                   </p>
@@ -280,8 +290,10 @@ export function RiskClassificationPage() {
                   >
                     Buscar riesgo
                   </label>
+
                   <div className="flex items-center gap-2 rounded-[5px] border border-line-2 bg-surface px-3 focus-within:border-accent">
                     <Search size={17} className="shrink-0 text-muted" />
+
                     <input
                       id="risk-search"
                       type="search"
@@ -301,6 +313,7 @@ export function RiskClassificationPage() {
                     <SlidersHorizontal size={15} />
                     Departamento
                   </label>
+
                   <select
                     id="risk-department"
                     value={department}
@@ -322,6 +335,7 @@ export function RiskClassificationPage() {
                   <span className="text-control font-medium text-ink">
                     Resultados
                   </span>
+
                   <span className="text-xs text-muted">
                     {libraryLoading ? "Cargando…" : risks.length}
                   </span>
@@ -349,9 +363,11 @@ export function RiskClassificationPage() {
                         size={24}
                         className="mx-auto text-muted"
                       />
+
                       <p className="mt-2 text-body-sm font-medium text-ink">
                         No hay riesgos para mostrar
                       </p>
+
                       <p className="mt-1 text-body-sm text-muted">
                         Intenta con otra búsqueda o departamento.
                       </p>
@@ -388,6 +404,7 @@ export function RiskClassificationPage() {
                             <span className="block break-words text-body-sm font-medium text-ink">
                               {risk.risk_name}
                             </span>
+
                             <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
                               <span>{risk.risk_library_id}</span>
                               <span aria-hidden="true">·</span>
@@ -427,6 +444,7 @@ export function RiskClassificationPage() {
                 <div className="rounded-md border border-line bg-nav p-2 text-accent">
                   <ShieldAlert size={20} />
                 </div>
+
                 <div>
                   <h2
                     id="evaluation-heading"
@@ -434,6 +452,7 @@ export function RiskClassificationPage() {
                   >
                     Evaluación del riesgo
                   </h2>
+
                   <p className="mt-1 text-body-sm text-muted">
                     Configura la probabilidad y el impacto del riesgo elegido.
                   </p>
@@ -445,11 +464,14 @@ export function RiskClassificationPage() {
                   <div className="rounded-full border border-line bg-surface p-3 text-muted">
                     <ShieldAlert size={26} />
                   </div>
+
                   <h3 className="mt-3 text-body font-semibold text-ink">
                     Selecciona un riesgo
                   </h3>
+
                   <p className="mt-1 max-w-xs text-body-sm text-muted">
-                    Elige un registro de la biblioteca para identificar qué riesgo estás evaluando.
+                    Elige un registro de la biblioteca para identificar qué
+                    riesgo estás evaluando.
                   </p>
                 </div>
               ) : (
@@ -460,15 +482,18 @@ export function RiskClassificationPage() {
                         <p className="m-0 text-xs font-medium uppercase tracking-wide text-muted">
                           Riesgo seleccionado
                         </p>
+
                         <h3 className="mt-1 break-words text-body font-semibold text-ink">
                           {selectedRisk.risk_name}
                         </h3>
+
                         <p className="mt-1 text-body-sm text-muted">
                           {selectedRisk.risk_library_id}
                           {" · "}
                           {selectedRisk.audit_department || "Sin departamento"}
                         </p>
                       </div>
+
                       <span className="shrink-0 rounded-full border border-line bg-surface px-2 py-1 text-xs text-muted">
                         En evaluación
                       </span>
@@ -483,6 +508,7 @@ export function RiskClassificationPage() {
                       >
                         Probabilidad
                       </label>
+
                       <select
                         id="probability"
                         value={probability}
@@ -506,6 +532,7 @@ export function RiskClassificationPage() {
                       >
                         Impacto
                       </label>
+
                       <select
                         id="impact"
                         value={impact}
@@ -557,18 +584,16 @@ export function RiskClassificationPage() {
                             {result.probability}/5
                           </p>
                         </div>
+
                         <div className="rounded-md border border-line bg-nav p-3">
-                          <p className="m-0 text-xs text-muted">
-                            Impacto
-                          </p>
+                          <p className="m-0 text-xs text-muted">Impacto</p>
                           <p className="mt-1 text-heading font-semibold text-ink">
                             {result.impact}/5
                           </p>
                         </div>
+
                         <div className="rounded-md border border-line bg-nav p-3">
-                          <p className="m-0 text-xs text-muted">
-                            Puntaje
-                          </p>
+                          <p className="m-0 text-xs text-muted">Puntaje</p>
                           <p className="mt-1 text-heading font-semibold text-ink">
                             {result.score}/25
                           </p>
@@ -581,21 +606,25 @@ export function RiskClassificationPage() {
                         <p className="m-0 text-control font-medium">
                           Nivel de riesgo
                         </p>
+
                         <p className="mt-1 text-heading font-semibold">
                           {result.level}
                         </p>
+
                         <p className="mt-1 text-body-sm">
                           {getLevelDescription(result.level)}
                         </p>
                       </div>
-                      
+
                       <button
                         type="button"
                         onClick={handleSaveEvaluation}
                         disabled={saving || loading || !result}
                         className="mt-4 w-full rounded-md bg-accent px-4 py-2.5 text-body-sm font-medium text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        {saving ? "Guardando evaluación..." : "Guardar evaluación"}
+                        {saving
+                          ? "Guardando evaluación..."
+                          : "Guardar evaluación"}
                       </button>
 
                       {saveMessage && (
@@ -606,7 +635,6 @@ export function RiskClassificationPage() {
                           {saveMessage}
                         </div>
                       )}
-
 
                       <p className="mt-3 text-xs text-muted">
                         Resultado calculado para {selectedRisk.risk_library_id}.
@@ -620,10 +648,14 @@ export function RiskClassificationPage() {
               )}
             </section>
           </div>
+
+          {/* History, dashboard, filters and comparison */}
+          <RiskHistorySection refreshKey={historyRefreshKey} />
         </div>
       </ContentArea>
     </Page>
   );
 }
+
 
 
