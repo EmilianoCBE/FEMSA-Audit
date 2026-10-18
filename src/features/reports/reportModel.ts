@@ -1,8 +1,10 @@
 import type { Finding } from "@/features/inbox/types";
 import { STATUS_CONFIG, SEVERITY_CONFIG } from "@/features/inbox/lib/findings";
+import { ROUTES } from "@/shared/routing/routes";
 
-export const REPORT_PATH = "/reportes/ejecutivos";
-export const SOURCE_NOTICE = "Exporta tus auditorias y hallazgos a Excel o PDF ";
+export const REPORT_PATH = ROUTES.reports;
+export const SOURCE_NOTICE =
+  "Datos de ejemplo de la bandeja: la fuente real de hallazgos esta pendiente de integracion";
 export type ReportFilters = { search: string; businessUnit: string; status: string; severity: string };
 export const EMPTY_FILTERS: ReportFilters = { search: "", businessUnit: "", status: "", severity: "" };
 export const FIELDS = [

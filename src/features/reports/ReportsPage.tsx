@@ -26,11 +26,11 @@ export function ReportsPage() {
     <Page>
       <PageHeader
         title="Reportes"
-        description="Elige la informacion que necesitas y descargala para tus reuniones o seguimiento"
+        description="Exporta tus auditorias y hallazgos a Excel o PDF para tus reuniones o seguimiento"
       />
       <ContentArea>
         <p className="mb-4 rounded border border-line-2 bg-nav p-3 text-body-sm" role="note">
-          {SOURCE_NOTICE} La fuente real de hallazgos esta pendiente de integracion
+          {SOURCE_NOTICE}
         </p>
         <QueryState query={query}>{(rows) => <ReportBuilder rows={rows} />}</QueryState>
       </ContentArea>
