@@ -1,4 +1,3 @@
-
 import { httpClient } from "@/shared/api/httpClient";
 
 export interface RiskLibraryItem {
@@ -26,15 +25,10 @@ export const riskLibraryService = {
     }
 
     const query = params.toString();
-    const endpoint = query
-      ? `/risk-library?${query}`
-      : "/risk-library";
+    const endpoint = query ? `/risk-library?${query}` : "/risk-library";
 
     return httpClient.get<RiskLibraryResponse>(endpoint);
   },
 
-  getById: (id: string) =>
-    httpClient.get<{ risk: RiskLibraryItem }>(
-      `/risk-library/${encodeURIComponent(id)}`
-    ),
+  getById: (id: string) => httpClient.get<{ risk: RiskLibraryItem }>(`/risk-library/${encodeURIComponent(id)}`),
 };
