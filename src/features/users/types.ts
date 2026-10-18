@@ -1,3 +1,4 @@
+
 export type User = {
   user_id: number;
   entra_id: string;
@@ -33,3 +34,23 @@ export type UpdateRoleResponse = {
     role_id: number;
   };
 };
+
+export type CreateUserRequest = {
+  firstName: string;
+  lastName: string;
+  role_id: number;
+  password: string;
+};
+
+export type CreateUserResponse = {
+  message: string;
+  user: {
+    user_id: number;
+    email: string;
+    full_name: string;
+    is_active: boolean;
+    created_at: string;
+    role_id: number;
+  };
+};
+

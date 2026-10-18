@@ -2,7 +2,7 @@ import type { RouteObject } from "react-router";
 import { Navigate } from "react-router";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import type { RouteHandle } from "@/shared/routing/handle";
-import { UsersPage } from "./pages/UsersPage";
+import  UsersPage  from "./pages/UsersPage";
 
 function RequireAdmin() {
   const user = useCurrentUser();
