@@ -73,7 +73,7 @@ export const NAVIGATION: readonly NavSection[] = [
     owner: "Equipo C",
     items: [
       { label: "Tableros", icon: BarChart3 },
-      { label: "Reportes ejecutivos", icon: FileText, to: REPORT_PATH },
+      { label: "Reportes", icon: FileText, to: REPORT_PATH },
     ],
   },
   {

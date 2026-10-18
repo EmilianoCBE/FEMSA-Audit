@@ -2,7 +2,7 @@ import type { Finding } from "@/features/inbox/types";
 import { STATUS_CONFIG, SEVERITY_CONFIG } from "@/features/inbox/lib/findings";
 
 export const REPORT_PATH = "/reportes/ejecutivos";
-export const SOURCE_NOTICE = "Datos de ejemplo de la bandeja — no usar para decisiones reales";
+export const SOURCE_NOTICE = "Exporta tus auditorias y hallazgos a Excel o PDF ";
 export type ReportFilters = { search: string; businessUnit: string; status: string; severity: string };
 export const EMPTY_FILTERS: ReportFilters = { search: "", businessUnit: "", status: "", severity: "" };
 export const FIELDS = [

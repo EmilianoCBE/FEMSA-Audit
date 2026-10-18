@@ -6,6 +6,6 @@ export const reportRoutes: RouteObject[] = [
   {
     path: REPORT_PATH,
     element: <ReportsPage />,
-    handle: { breadcrumb: ["Reportes", "Reportes ejecutivos"] },
+    handle: { breadcrumb: ["Reportes"] },
   },
 ];

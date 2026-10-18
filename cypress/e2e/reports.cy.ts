@@ -34,7 +34,7 @@ describe("Reportes y exportacion", () => {
     cy.contains("Selecciona al menos una columna");
     cy.contains("button", "Exportar PDF").should("be.disabled");
     cy.viewport(390, 844);
-    cy.contains("h1", "Reportes ejecutivos").should("be.visible");
+    cy.contains("h1", "Reportes").should("be.visible");
     cy.screenshot("reportes-movil");
   });
 });

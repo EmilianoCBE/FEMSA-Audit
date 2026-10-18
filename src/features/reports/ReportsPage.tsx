@@ -25,7 +25,7 @@ export function ReportsPage() {
   return (
     <Page>
       <PageHeader
-        title="Reportes ejecutivos"
+        title="Reportes"
         description="Elige la informacion que necesitas y descargala para tus reuniones o seguimiento"
       />
       <ContentArea>
