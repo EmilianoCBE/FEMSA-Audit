@@ -73,8 +73,8 @@ export const findingLifecycleMock: WorkflowDiagram = {
     {
       id: "return-to-review",
       label: "devolver a revisión",
-      path: "M614 198 L450 198 L450 82",
-      labelPosition: { x: 532, y: 192 },
+      path: "M614 198 L298 198 L298 82",
+      labelPosition: { x: 456, y: 192 },
       labelAnchor: "middle",
       variant: "rejected",
     },
