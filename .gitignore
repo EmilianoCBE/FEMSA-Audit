@@ -10,3 +10,6 @@ dist/
 cypress/downloads/
 cypress/screenshots/
 cypress/videos/
+
+# Vercel
+.vercel
