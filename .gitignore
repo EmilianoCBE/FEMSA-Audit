@@ -7,6 +7,6 @@ dist/
 !.env.example
 
 # Cypress
+cypress/downloads/
 cypress/screenshots/
 cypress/videos/
-cypress/downloads/
