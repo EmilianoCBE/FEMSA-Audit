@@ -1,4 +1,3 @@
-
 import { httpClient } from "@/shared/api/httpClient";
 
 import type {
@@ -23,11 +22,7 @@ export const usersService = {
   },
 
   updateRole: (userId: number, roleId: number) =>
-    httpClient.put<UpdateRoleResponse>(
-      `/users/${userId}/role`,
-      { role_id: roleId }
-    ),
+    httpClient.put<UpdateRoleResponse>(`/users/${userId}/role`, { role_id: roleId }),
 
-  create: (payload: CreateUserRequest) =>
-    httpClient.post<CreateUserResponse>("/users", payload),
+  create: (payload: CreateUserRequest) => httpClient.post<CreateUserResponse>("/users", payload),
 };

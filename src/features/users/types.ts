@@ -1,4 +1,3 @@
-
 export type User = {
   user_id: number;
   entra_id: string;
@@ -53,4 +52,3 @@ export type CreateUserResponse = {
     role_id: number;
   };
 };
-
