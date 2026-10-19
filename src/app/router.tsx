@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate } from "react-router";
 import { appBuilderRoutes } from "@/features/app-builder/routes";
 import { inboxRoutes } from "@/features/inbox/routes";
 import { usersRoutes } from "@/features/users/routes";
+import { reportRoutes } from "@/features/reports/routes";
 import { riskRoutes } from "@/features/risk/routes";
 import { ROUTES } from "@/shared/routing/routes";
 import { AppLayout } from "./layout/AppLayout";
@@ -28,6 +29,7 @@ export const router = createBrowserRouter([
           ...appBuilderRoutes,
           ...usersRoutes,
           ...riskRoutes,
+          ...reportRoutes,
           {
             path: "*",
             element: <Navigate to={ROUTES.home} replace />,

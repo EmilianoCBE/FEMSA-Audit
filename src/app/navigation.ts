@@ -72,8 +72,7 @@ export const NAVIGATION: readonly NavSection[] = [
     owner: "Equipo C",
     items: [
       { label: "Tableros", icon: BarChart3 },
-      // TODO(US09 - Magda Colunga): agregar exportación de reportes en PDF/Excel con datos legibles.
-      { label: "Reportes ejecutivos", icon: FileText },
+      { label: "Reportes", icon: FileText, to: ROUTES.reports },
     ],
   },
   {

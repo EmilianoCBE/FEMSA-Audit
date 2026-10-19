@@ -1,5 +1,4 @@
 import { useBreadcrumb } from "@/shared/routing/handle";
-import { Badge, Button } from "@/shared/ui";
 import { Breadcrumbs } from "./Breadcrumbs";
 import { LogoutButton } from "@/features/auth/components/LogoutButton";
 
@@ -13,13 +12,6 @@ export function Topbar() {
         <div className="desktop:hidden">
           <LogoutButton />
         </div>
-        <Badge tone="amber" size="sm">
-          Borrador · v4
-        </Badge>
-        {/* TODO(US08 - Leonel): abrir preview responsivo con modos Desktop, Tablet y Mobile. */}
-        <Button>Vista previa</Button>
-        {/* TODO(US10 - Juan Aguilar): guardar/reabrir Draft y evitar que aparezca como aplicación publicada. */}
-        <Button variant="primary">Publicar</Button>
       </div>
     </div>
   );
