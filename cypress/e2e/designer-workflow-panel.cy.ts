@@ -27,6 +27,11 @@ describe("Flujo del proceso en el Designer (US05)", () => {
 
     cy.get("button[aria-label='Ver flujo del proceso en grande']").should("not.exist");
     cy.scrollTo("bottom");
+    // La miniatura va en la esquina inferior: arriba tapaba el panel derecho del Designer.
+    cy.get("button[aria-label='Ver flujo del proceso en grande']").should(($button) => {
+      const { bottom } = $button[0].getBoundingClientRect();
+      expect(bottom).to.be.greaterThan(($button[0].ownerDocument.defaultView?.innerHeight ?? 0) - 40);
+    });
     cy.get("button[aria-label='Ver flujo del proceso en grande']").click();
 
     cy.get("dialog[aria-label='Flujo del proceso']").should("be.visible").and("contain", "Reglas (3)");

@@ -13,7 +13,10 @@ export function DesignerPage() {
         <RouteTabs label="Secciones del designer" tabs={DESIGNER_TABS} />
       </PageHeader>
       <EmbeddedWorkflowPanel />
-      <Outlet />
+      {/* Espacio para que lo último de la página pueda quedar arriba de la miniatura del flujo (esquina inferior) */}
+      <div className="pb-40">
+        <Outlet />
+      </div>
     </Page>
   );
 }
