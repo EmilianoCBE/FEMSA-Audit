@@ -1,2 +1,2 @@
 export { VersionHistoryPanel } from "./components/VersionHistoryPanel";
-export type { AppVersion, VersionStatus } from "./types";
+export type { AppConfig, AppVersion, AppVersionDetail, VersionStatus } from "./types";

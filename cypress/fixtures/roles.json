@@ -1,0 +1,7 @@
+{
+  "roles": [
+    { "role_id": 1, "name": "Creador de aplicaciones", "description": "Crea y edita aplicaciones" },
+    { "role_id": 2, "name": "Administrador", "description": "Acceso total" },
+    { "role_id": 3, "name": "Visualizador", "description": "Solo lectura" }
+  ]
+}

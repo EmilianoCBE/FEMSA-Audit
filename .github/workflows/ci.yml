@@ -97,7 +97,13 @@ jobs:
             url=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})
           else
             url=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})
-            vercel alias set "$url" "$STAGING_ALIAS" --token=${{ secrets.VERCEL_TOKEN }}
+            # `vercel alias set` necesita leer el usuario del token y falla con tokens de equipo ("User not found"),
+            # así que el alias de staging se asigna con la API REST de Vercel.
+            api="https://api.vercel.com"
+            auth="Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}"
+            id=$(curl --fail-with-body -sS -H "$auth" "$api/v13/deployments/${url#https://}?teamId=$VERCEL_ORG_ID" | jq -r .id)
+            curl --fail-with-body -sS -X POST -H "$auth" -H "Content-Type: application/json" \
+              -d "{\"alias\":\"$STAGING_ALIAS\"}" "$api/v2/deployments/$id/aliases?teamId=$VERCEL_ORG_ID"
             url="https://$STAGING_ALIAS"
           fi
           echo "url=$url" >> "$GITHUB_OUTPUT"

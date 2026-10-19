@@ -263,23 +263,6 @@ export function FieldsPanel() {
         }
       />
 
-      <div className="mb-4 border-b border-line">
-        <div className="flex gap-8 text-body-sm">
-          <button type="button" className="border-b-2 border-accent px-1 pb-3 font-medium text-accent">
-            Campos
-          </button>
-          <button type="button" className="px-1 pb-3 text-muted">
-            Diseno por rol
-          </button>
-          <button type="button" className="px-1 pb-3 text-muted">
-            Validaciones
-          </button>
-          <button type="button" className="px-1 pb-3 text-muted">
-            Historial de versiones
-          </button>
-        </div>
-      </div>
-
       <QueryState query={queryPlantillasDesigner}>
         {(plantillasDesigner) => (
           <div className="grid gap-0 overflow-hidden rounded-md border border-line bg-surface desktop:grid-cols-[230px_minmax(0,1fr)_340px]">
