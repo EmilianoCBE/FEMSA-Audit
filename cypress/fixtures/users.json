@@ -1,0 +1,26 @@
+{
+  "users": [
+    {
+      "user_id": 1,
+      "entra_id": "",
+      "email": "ada.admin@femsa.com",
+      "full_name": "Ada Administradora",
+      "is_active": true,
+      "created_at": "2026-09-01T00:00:00Z",
+      "role_id": 2,
+      "role_name": "Administrador",
+      "role_description": "Acceso total"
+    },
+    {
+      "user_id": 2,
+      "entra_id": "",
+      "email": "daniela.aedo@femsa.com",
+      "full_name": "Daniela Aedo",
+      "is_active": true,
+      "created_at": "2026-09-02T00:00:00Z",
+      "role_id": 3,
+      "role_name": "Visualizador",
+      "role_description": "Solo lectura"
+    }
+  ]
+}
