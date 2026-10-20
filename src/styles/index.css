@@ -112,6 +112,13 @@
  * Con zoom, 100vh se multiplica por el factor, así que se divide entre él para llenar justo la pantalla.
  */
 
+/* Con zoom, la altura fija del layout (sidebar y topbar quietos, solo scroll del contenido) también se divide entre el factor. */
+@media (min-width: 1600px) {
+  .app-shell {
+    height: calc(100vh / var(--screen-zoom, 1));
+  }
+}
+
 /* Full HD: 1920 x 1080 */
 @media (min-width: 1600px) and (max-width: 1999px) {
   .app-shell {
