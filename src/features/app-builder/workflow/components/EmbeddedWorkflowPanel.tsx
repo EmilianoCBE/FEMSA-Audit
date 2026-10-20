@@ -176,9 +176,15 @@ export function EmbeddedWorkflowPanel() {
   useEffect(() => {
     const panel = panelRef.current;
     if (!panel) return;
-    const observer = new IntersectionObserver(([entry]) => {
-      setScrolledPast(!entry.isIntersecting && entry.boundingClientRect.top < 0);
-    });
+    // En escritorio hace scroll el contenido (data-app-scroll), no la ventana: se mide contra ese contenedor.
+    const container = panel.closest<HTMLElement>("[data-app-scroll]");
+    const root = container && getComputedStyle(container).overflowY !== "visible" ? container : null;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setScrolledPast(!entry.isIntersecting && entry.boundingClientRect.top < (entry.rootBounds?.top ?? 0));
+      },
+      { root },
+    );
     observer.observe(panel);
     return () => observer.disconnect();
   }, []);
