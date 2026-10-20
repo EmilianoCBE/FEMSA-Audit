@@ -22,6 +22,7 @@ describe("Asistente de diseño del Designer (US15-US17)", () => {
   const analysis = {
     appId: "layout dummy",
     aiAvailable: true,
+    recorded: true,
     provider: "mock",
     promptVersion: "mock-v1",
     latencyMs: 3,
@@ -144,5 +145,55 @@ describe("Asistente de diseño del Designer (US15-US17)", () => {
     openAssistant();
     cy.contains("button", "Analizar formulario").should("be.disabled");
     cy.contains("Guarda los cambios del formulario para analizar lo que ves.");
+  });
+
+  it("US17 cada decisión queda registrada en el historial del asistente", () => {
+    cy.intercept("POST", "/api/ai/designer/analyze", analysis);
+    cy.intercept("POST", "/api/ai/recommendations/*/decision", { recommendation: {} }).as("decision");
+    openAssistant();
+    cy.contains("button", "Analizar formulario").click();
+
+    card(analysis.suggestions[1].title).within(() => cy.contains("button", "Aceptar").click());
+    cy.wait("@decision").then(({ request }) => {
+      expect(request.url).to.match(/\/recommendations\/rules-2\/decision$/);
+      expect(request.body).to.deep.equal({ decision: "accepted" });
+    });
+
+    card(analysis.suggestions[2].title).within(() => {
+      cy.contains("button", "Reemplazar").click();
+      cy.get("input").clear().type("Fecha de hallazgo");
+      cy.contains("button", "Aplicar mi versión").click();
+    });
+    cy.wait("@decision")
+      .its("request.body")
+      .should("deep.equal", {
+        decision: "replaced",
+        change: { op: "add-field", type: "date", label: "Fecha de hallazgo", section: "identificacion" },
+      });
+
+    card(analysis.suggestions[0].title).within(() => cy.contains("button", "Rechazar").click());
+    cy.wait("@decision").its("request.body").should("deep.equal", { decision: "rejected" });
+  });
+
+  it("si no se pudo registrar la decisión, avisa sin deshacer el cambio", () => {
+    cy.intercept("POST", "/api/ai/designer/analyze", analysis);
+    cy.intercept("POST", "/api/ai/recommendations/*/decision", { statusCode: 500, body: { msg: "Error" } });
+    openAssistant();
+    cy.contains("button", "Analizar formulario").click();
+    card(analysis.suggestions[1].title).within(() => cy.contains("button", "Aceptar").click());
+    cy.contains("No se pudo registrar alguna decisión");
+    cy.contains("button", "Fecha compromiso").children().last().should("have.text", "Fecha");
+  });
+
+  it("si el análisis no se guardó (recorded false), no intenta registrar decisiones", () => {
+    cy.intercept("POST", "/api/ai/designer/analyze", { ...analysis, recorded: false });
+    cy.intercept("POST", "/api/ai/recommendations/*/decision", cy.spy().as("registro"));
+    openAssistant();
+    cy.contains("button", "Analizar formulario").click();
+    card(analysis.suggestions[2].title).within(() => {
+      cy.contains("button", "Rechazar").click();
+      cy.contains("Rechazada");
+    });
+    cy.get("@registro").should("not.have.been.called");
   });
 });

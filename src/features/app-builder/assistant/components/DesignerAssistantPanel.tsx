@@ -49,6 +49,7 @@ export function DesignerAssistantPanel({
   const [decisions, setDecisions] = useState<Record<string, SuggestionDecision>>({});
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState<string>();
+  const [notRecorded, setNotRecorded] = useState(false);
 
   async function analyze() {
     setAnalyzing(true);
@@ -56,6 +57,7 @@ export function DesignerAssistantPanel({
     try {
       setAnalysis(await assistantService.analyzeDesigner(appId));
       setDecisions({});
+      setNotRecorded(false);
     } catch {
       // US18: si el asistente falla, el Designer sigue funcionando de forma manual.
       setError("El asistente no está disponible en este momento. Puedes seguir editando el formulario manualmente.");
@@ -71,6 +73,11 @@ export function DesignerAssistantPanel({
       setDecisions((current) => ({ ...current, [suggestion.id]: decision }));
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "No se pudo aplicar la sugerencia.");
+      return;
+    }
+    // Registrar la decisión no bloquea al usuario: el cambio ya quedó aplicado en pantalla.
+    if (analysis?.recorded) {
+      assistantService.decide(suggestion.id, decision, change).catch(() => setNotRecorded(true));
     }
   }
 
@@ -95,6 +102,13 @@ export function DesignerAssistantPanel({
         <div role="alert" className="mt-3 rounded-md border border-red-line bg-red-bg px-3 py-2 text-body-sm text-red">
           {error}
         </div>
+      )}
+
+      {notRecorded && (
+        <p role="status" className="mt-3 text-label text-muted">
+          No se pudo registrar alguna decisión en el historial del asistente; tus cambios en el formulario no se
+          afectan.
+        </p>
       )}
 
       {analysis && (

@@ -31,6 +31,8 @@ export type DesignerAnalysis = {
   appId: string;
   /** false si la IA falló o tardó: solo vienen las reglas (US18). */
   aiAvailable: boolean;
+  /** true si las sugerencias se guardaron en la BD y se pueden registrar las decisiones. */
+  recorded: boolean;
   provider: string;
   promptVersion: string | null;
   latencyMs: number;
