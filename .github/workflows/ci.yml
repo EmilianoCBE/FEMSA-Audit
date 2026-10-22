@@ -15,6 +15,9 @@ env:
   VERCEL_CLI: vercel@64.3.1
   # Alias fijo para staging (develop). Producción usa el dominio de producción del proyecto.
   STAGING_ALIAS: femsa-audit-staging.vercel.app
+  # El front reenvía /api a la API (vercel.json). Producción → API de producción; staging y previews → API de staging.
+  API_PROD: https://femsa-audit-api.vercel.app
+  API_STAGING: https://femsa-audit-api-staging.vercel.app
 
 jobs:
   calidad:
@@ -86,6 +89,9 @@ jobs:
         run: npm install --global "$VERCEL_CLI"
       - name: Descargar configuración del proyecto
         run: vercel pull --yes --environment=${{ github.ref_name == 'main' && 'production' || 'preview' }} --token=${{ secrets.VERCEL_TOKEN }}
+      - name: Apuntar /api a la API de staging
+        if: github.ref_name != 'main'
+        run: sed -i "s#$API_PROD#$API_STAGING#g" vercel.json && grep -q "$API_STAGING" vercel.json
       - name: Build
         run: vercel build ${{ github.ref_name == 'main' && '--prod' || '' }} --token=${{ secrets.VERCEL_TOKEN }}
         env:
@@ -141,6 +147,8 @@ jobs:
         run: npm install --global "$VERCEL_CLI"
       - name: Descargar configuración del proyecto
         run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+      - name: Apuntar /api a la API de staging
+        run: sed -i "s#$API_PROD#$API_STAGING#g" vercel.json && grep -q "$API_STAGING" vercel.json
       - name: Build
         run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
         env:
