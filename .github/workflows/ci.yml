@@ -50,7 +50,7 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - name: Build, servidor y Cypress
-        uses: cypress-io/github-action@v6
+        uses: cypress-io/github-action@v7
         with:
           build: npm run build
           start: npm run preview
@@ -189,7 +189,7 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - name: Cypress contra el sitio publicado
-        uses: cypress-io/github-action@v6
+        uses: cypress-io/github-action@v7
         with:
           config: baseUrl=${{ env.URL_PUBLICADA }}
       - name: Capturas de pruebas fallidas
