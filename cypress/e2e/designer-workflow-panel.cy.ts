@@ -21,12 +21,26 @@ describe("Flujo del proceso en el Designer (US05)", () => {
   });
 
   it("al bajar muestra la miniatura y abre el flujo en grande", () => {
-    // Pantalla baja para que el panel salga de la vista al hacer scroll
+    // Pantalla baja y un formulario con contenido suficiente para que el panel salga de la vista al hacer scroll
+    const field = (id: string) => ({
+      id,
+      type: "short-text",
+      x: 0,
+      y: 0,
+      width: 520,
+      height: 56,
+      config: { label: id },
+    });
+    cy.intercept("GET", "/api/designer/layouts", {
+      layouts: [{ id: "layout dummy", name: "Modulo de hallazgos", elements: ["a", "b", "c", "d", "e"].map(field) }],
+    });
     cy.viewport(1000, 360);
-    cy.visit("/app-builder/designer/history");
+    cy.visit("/app-builder/designer/fields");
+    cy.contains("button", "e");
 
     cy.get("button[aria-label='Ver flujo del proceso en grande']").should("not.exist");
-    cy.scrollTo("bottom");
+    // En escritorio solo hace scroll el contenido (el sidebar y la topbar quedan fijos).
+    cy.get("[data-app-scroll]").scrollTo("bottom");
     // La miniatura va en la esquina inferior: arriba tapaba el panel derecho del Designer.
     cy.get("button[aria-label='Ver flujo del proceso en grande']").should(($button) => {
       const { bottom } = $button[0].getBoundingClientRect();
@@ -37,6 +51,6 @@ describe("Flujo del proceso en el Designer (US05)", () => {
     cy.get("dialog[aria-label='Flujo del proceso']").should("be.visible").and("contain", "Reglas (3)");
     cy.get("button[aria-label='Cerrar flujo del proceso']").click();
     cy.get("dialog[aria-label='Flujo del proceso']").should("not.be.visible");
-    cy.location("pathname").should("eq", "/app-builder/designer/history");
+    cy.location("pathname").should("eq", "/app-builder/designer/fields");
   });
 });

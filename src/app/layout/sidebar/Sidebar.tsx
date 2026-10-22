@@ -38,11 +38,12 @@ export function Sidebar({ sections }: { sections: readonly NavSection[] }) {
     .filter((section) => section.items.length > 0);
 
   return (
-    <aside className="hidden flex-col border-r border-line bg-nav desktop:flex">
+    <aside className="hidden min-h-0 flex-col border-r border-line bg-nav desktop:flex">
       <Brand />
       <SidebarSearch />
 
-      <nav className="flex-1 overflow-y-auto px-2.5 pt-2 pb-5">
+      {/* min-h-0: el menú hace scroll por dentro y el usuario / cerrar sesión siempre queda visible */}
+      <nav className="min-h-0 flex-1 overflow-y-auto px-2.5 pt-2 pb-5">
         {visibleSections.map((section) => (
           <NavGroup key={section.label} section={section} />
         ))}
