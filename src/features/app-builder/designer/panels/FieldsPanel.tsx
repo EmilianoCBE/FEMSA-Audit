@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@/shared/hooks/useQuery";
-import { Button, ContentArea, QueryState, SectionToolbar } from "@/shared/ui";
+import { Button, ContentArea, QueryState, SectionToolbar, SegmentedControl, type SegmentedOption } from "@/shared/ui";
+import { applyDesignerChange, type DesignerChange, DesignerAssistantPanel, targetFieldId } from "../../assistant";
 import { designerService } from "../services/designerService";
 import type { ElementoDesigner, FormFieldType, PlantillaDesigner } from "../types";
 
@@ -92,6 +93,13 @@ const descripcionPorTipoDesigner = (tipoDesigner: ElementoDesigner["type"]) => {
   return opcionDesigner?.description ?? "Campo configurable";
 };
 
+type VistaPanelDesigner = "campo" | "asistente";
+
+const VISTAS_PANEL_DESIGNER: readonly SegmentedOption<VistaPanelDesigner>[] = [
+  { value: "campo", label: "Campo" },
+  { value: "asistente", label: "Asistente IA" },
+];
+
 // TODO(US03 - Magda): conectar reordenamiento entre secciones si el equipo requiere persistir orden manual.
 export function FieldsPanel() {
   const queryPlantillasDesigner = useQuery(designerService.listPlantillasDesigner);
@@ -101,6 +109,7 @@ export function FieldsPanel() {
   const [errorDesigner, setErrorDesigner] = useState<string>();
   const [estaGuardandoDesigner, setEstaGuardandoDesigner] = useState(false);
   const [tieneCambiosDesigner, setTieneCambiosDesigner] = useState(false);
+  const [vistaPanelDesigner, setVistaPanelDesigner] = useState<VistaPanelDesigner>("campo");
 
   useEffect(() => {
     if (!plantillaDesignerActual && queryPlantillasDesigner.data?.length) {
@@ -165,6 +174,15 @@ export function FieldsPanel() {
 
     actualizarElementosDesigner([...elementosDesigner, nuevoCampoDesigner]);
     setCampoSeleccionadoDesignerId(nuevoCampoDesigner.id);
+  };
+
+  // US17: solo se llama cuando el usuario acepta o reemplaza una sugerencia; queda pendiente de Guardar.
+  const aplicarCambioAsistente = (cambio: DesignerChange) => {
+    const elementosActualizadosDesigner = applyDesignerChange(elementosDesigner, cambio).map(
+      normalizarElementoDesigner,
+    );
+    actualizarElementosDesigner(elementosActualizadosDesigner);
+    setCampoSeleccionadoDesignerId(targetFieldId(cambio, elementosActualizadosDesigner));
   };
 
   const soltarCampoDesigner = (event: React.DragEvent<HTMLElement>, seccionDesigner: SeccionDesigner) => {
@@ -263,23 +281,6 @@ export function FieldsPanel() {
         }
       />
 
-      <div className="mb-4 border-b border-line">
-        <div className="flex gap-8 text-body-sm">
-          <button type="button" className="border-b-2 border-accent px-1 pb-3 font-medium text-accent">
-            Campos
-          </button>
-          <button type="button" className="px-1 pb-3 text-muted">
-            Diseno por rol
-          </button>
-          <button type="button" className="px-1 pb-3 text-muted">
-            Validaciones
-          </button>
-          <button type="button" className="px-1 pb-3 text-muted">
-            Historial de versiones
-          </button>
-        </div>
-      </div>
-
       <QueryState query={queryPlantillasDesigner}>
         {(plantillasDesigner) => (
           <div className="grid gap-0 overflow-hidden rounded-md border border-line bg-surface desktop:grid-cols-[230px_minmax(0,1fr)_340px]">
@@ -368,14 +369,33 @@ export function FieldsPanel() {
             </main>
 
             <aside className="border-t border-line bg-surface p-4 desktop:border-t-0 desktop:border-l">
-              <PanelConfiguracionDesigner
-                campoDesigner={campoSeleccionadoDesigner}
-                onActualizarDesigner={actualizarCampoDesigner}
-                onGuardarDesigner={guardarFormularioDesigner}
-                onDescartarDesigner={recargarPlantillaDesigner}
-                guardandoDesigner={estaGuardandoDesigner}
-                tieneCambiosDesigner={tieneCambiosDesigner}
+              <SegmentedControl
+                className="mb-4"
+                options={VISTAS_PANEL_DESIGNER}
+                value={vistaPanelDesigner}
+                onValueChange={setVistaPanelDesigner}
               />
+              {vistaPanelDesigner === "asistente" && plantillaDesignerActual ? (
+                <DesignerAssistantPanel
+                  appId={plantillaDesignerActual.id}
+                  elements={elementosDesigner}
+                  hasUnsavedChanges={tieneCambiosDesigner}
+                  onApplyChange={aplicarCambioAsistente}
+                  onFocusField={(campoDesignerId) => {
+                    setCampoSeleccionadoDesignerId(campoDesignerId);
+                    setVistaPanelDesigner("campo");
+                  }}
+                />
+              ) : (
+                <PanelConfiguracionDesigner
+                  campoDesigner={campoSeleccionadoDesigner}
+                  onActualizarDesigner={actualizarCampoDesigner}
+                  onGuardarDesigner={guardarFormularioDesigner}
+                  onDescartarDesigner={recargarPlantillaDesigner}
+                  guardandoDesigner={estaGuardandoDesigner}
+                  tieneCambiosDesigner={tieneCambiosDesigner}
+                />
+              )}
             </aside>
           </div>
         )}

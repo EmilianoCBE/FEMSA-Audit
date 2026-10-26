@@ -126,11 +126,11 @@ function ProcessContent() {
   );
 }
 
-/** Miniatura en la esquina; al picarle abre el flujo en grande */
+/** Miniatura en la esquina inferior derecha (arriba tapaba el panel derecho del Designer); al picarle abre el flujo en grande */
 function WorkflowMiniature({ onOpen }: { onOpen: () => void }) {
   return (
     // Entra con fade y un deslizamiento corto (sin animación si el sistema pide movimiento reducido)
-    <div className="fixed top-4 right-4 z-20 rounded-md border border-accent-line bg-surface p-2.5 shadow-lg transition duration-200 ease-out hover:border-accent starting:-translate-y-2 starting:opacity-0 motion-reduce:transition-none">
+    <div className="fixed right-4 bottom-4 z-20 rounded-md border border-accent-line bg-surface p-2.5 shadow-lg transition duration-200 ease-out hover:border-accent starting:translate-y-2 starting:opacity-0 motion-reduce:transition-none">
       <div className="flex items-center gap-2">
         <Eyebrow size="sm">Flujo del proceso</Eyebrow>
         <Maximize2 aria-hidden className="ml-auto size-3 text-muted" />
@@ -176,9 +176,15 @@ export function EmbeddedWorkflowPanel() {
   useEffect(() => {
     const panel = panelRef.current;
     if (!panel) return;
-    const observer = new IntersectionObserver(([entry]) => {
-      setScrolledPast(!entry.isIntersecting && entry.boundingClientRect.top < 0);
-    });
+    // En escritorio hace scroll el contenido (data-app-scroll), no la ventana: se mide contra ese contenedor.
+    const container = panel.closest<HTMLElement>("[data-app-scroll]");
+    const root = container && getComputedStyle(container).overflowY !== "visible" ? container : null;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setScrolledPast(!entry.isIntersecting && entry.boundingClientRect.top < (entry.rootBounds?.top ?? 0));
+      },
+      { root },
+    );
     observer.observe(panel);
     return () => observer.disconnect();
   }, []);

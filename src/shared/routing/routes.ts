@@ -5,6 +5,7 @@
 export const ROUTES = {
   home: "/",
   inbox: "/bandeja",
+  reports: "/reportes/ejecutivos",
   appBuilder: {
     root: "/app-builder",
     workflow: "/app-builder/workflow",

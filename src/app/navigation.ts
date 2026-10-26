@@ -10,7 +10,6 @@ import {
   UserCircle,
   type LucideIcon,
 } from "lucide-react";
-import { REPORT_PATH } from "@/features/reports/reportModel";
 import { ROUTES } from "@/shared/routing/routes";
 
 export type NavItem = {
@@ -73,7 +72,7 @@ export const NAVIGATION: readonly NavSection[] = [
     owner: "Equipo C",
     items: [
       { label: "Tableros", icon: BarChart3 },
-      { label: "Reportes", icon: FileText, to: REPORT_PATH },
+      { label: "Reportes", icon: FileText, to: ROUTES.reports },
     ],
   },
   {
