@@ -1,0 +1,253 @@
+POST /api/designer/layouts 201 22.779 ms - 382
+POST /api/ai/designer/analyze 200 18.153 ms - 1240
+✔ US17 al analizar se guardan las sugerencias con quién las pidió y se devuelven con su id (292.045875ms)
+POST /api/ai/designer/analyze 200 1.402 ms - 1240
+POST /api/ai/recommendations/2/decision 200 0.504 ms - 430
+POST /api/ai/recommendations/3/decision 200 0.352 ms - 524
+POST /api/ai/recommendations/1/decision 200 0.836 ms - 405
+✔ US17 aceptar, rechazar y reemplazar quedan registrados con quién decidió (11.799875ms)
+POST /api/ai/designer/analyze 200 0.475 ms - 1240
+POST /api/ai/recommendations/2/decision 200 0.547 ms - 430
+POST /api/ai/recommendations/2/decision 409 1.251 ms - 48
+POST /api/ai/recommendations/1/decision 400 0.343 ms - 89
+POST /api/ai/recommendations/1/decision 400 0.196 ms - 57
+POST /api/ai/recommendations/1/decision 400 0.190 ms - 80
+POST /api/ai/recommendations/999/decision 404 0.523 ms - 35
+POST /api/ai/recommendations/abc/decision 404 0.193 ms - 35
+✔ US17 una sugerencia se decide una sola vez y se validan los datos (11.422458ms)
+POST /api/ai/recommendations/1/decision 401 0.137 ms - 40
+POST /api/ai/recommendations/1/decision 403 0.188 ms - 30
+✔ las decisiones piden sesión y mismo origen (1.348083ms)
+[ai] No se guardaron las sugerencias: BD no disponible
+POST /api/ai/designer/analyze 200 0.356 ms - 1256
+✔ si no se puede guardar, el asistente responde igual con recorded false (1.091125ms)
+POST /api/ai/designer/analyze 200 0.282 ms - 1240
+POST /api/ai/recommendations/3/decision 200 0.140 ms - 434
+POST /api/ai/recommendations/1/decision 200 0.176 ms - 405
+GET /api/ai/designer/metrics?appId=layout_1792986156653_d3835b 200 0.305 ms - 246
+GET /api/ai/designer/metrics 400 0.122 ms - 83
+✔ métricas de aceptación por origen (3.411917ms)
+GET /api/ai/designer/metrics?appId=layout_1792986156653_d3835b 503 0.212 ms - 78
+POST /api/ai/recommendations/1/decision 503 0.155 ms - 78
+✔ si falta la tabla, métricas y decisiones responden 503 con la instrucción (1.847042ms)
+✔ US15 Gemini recibe instrucciones fijas, respuesta JSON con esquema y temperatura baja (2.0705ms)
+✔ RNF-13 al modelo solo va la estructura del formulario (0.607917ms)
+✔ US15 la respuesta de Gemini se convierte en sugerencias válidas (3.319666ms)
+✔ US18 si Gemini responde texto que no es JSON o vacío, la IA queda no disponible y siguen las reglas (0.213125ms)
+✔ US18 al vencer el tiempo se cancela la petición a Gemini (2900.689875ms)
+✔ sin GEMINI_API_KEY el proveedor gemini se reporta como no disponible (0.366708ms)
+✔ US15 se ignora un fieldId pegado a add-field y se descartan campos sugeridos sin cambio (0.3595ms)
+✔ US15 si la primera respuesta no trae nada válido, se reintenta una vez (343.41025ms)
+✔ US16 detecta etiquetas vacías o que siguen con el nombre del componente (2.791333ms)
+✔ US16 detecta etiquetas duplicadas sin importar mayúsculas ni acentos (0.532666ms)
+✔ US16 detecta campos calculados sin fórmula (0.284666ms)
+✔ US15 recomienda el componente adecuado según la etiqueta (RF-19) (0.713166ms)
+✔ US16 con la configuración vigente real (v6) encuentra las inconsistencias esperadas (0.449625ms)
+✔ US17 la respuesta de la IA se valida: se descarta lo inventado o mal formado (3.561042ms)
+✔ el proveedor simulado responde con el mismo formato que exige el esquema (0.449291ms)
+POST /api/designer/layouts 201 19.817 ms - 586
+POST /api/ai/designer/analyze 401 1.917 ms - 40
+POST /api/ai/designer/analyze 403 2.913 ms - 30
+✔ US15-US17 el asistente pide sesión y rechaza otro origen (177.676334ms)
+POST /api/ai/designer/analyze 400 0.402 ms - 83
+POST /api/ai/designer/analyze 400 0.270 ms - 83
+POST /api/ai/designer/analyze 404 0.261 ms - 50
+✔ US15-US17 valida el formulario a analizar (3.434625ms)
+[ai] No se guardaron las sugerencias: Unexpected SQL
+POST /api/ai/designer/analyze 200 2.956 ms - 1541
+GET /api/designer/layouts/layout_1792986156653_f0145e 200 0.292 ms - 586
+✔ US16 y US15 devuelven reglas e IA, todas explicadas y sin cambiar el formulario (5.066125ms)
+[ai] No se guardaron las sugerencias: Unexpected SQL
+[ai] No se guardaron las sugerencias: Unexpected SQL
+✔ US18 si la IA falla o tarda, responde solo con reglas y aiAvailable false (51.585042ms)
+✔ hash con sal, contraseña incorrecta y hash malformado (2024.21225ms)
+POST /api/auth/login 400 13.176 ms - 53
+POST /api/auth/login 401 246.381 ms - 44
+POST /api/auth/login 401 212.187 ms - 44
+✔ validación y mensaje genérico para credenciales inválidas (517.382458ms)
+POST /api/auth/login 403 0.290 ms - 30
+GET /api/auth/me 401 0.158 ms - 40
+✔ rechaza otro origen y acceso sin sesión (2.329583ms)
+POST /api/auth/login 200 211.247 ms - 107
+GET /api/auth/me 200 0.369 ms - 107
+POST /api/auth/logout 200 0.298 ms - 11
+GET /api/auth/me 401 0.222 ms - 56
+POST /api/auth/login 200 212.067 ms - 107
+GET /api/auth/me 200 0.148 ms - 107
+POST /api/auth/logout 200 0.185 ms - 11
+GET /api/auth/me 401 0.239 ms - 56
+✔ login por usuario y email, cookie HttpOnly, sesión y logout (431.758834ms)
+POST /api/auth/login 200 207.420 ms - 107
+GET /api/auth/me 401 0.379 ms - 56
+POST /api/auth/login 401 228.154 ms - 44
+GET /api/auth/me 401 0.439 ms - 56
+POST /api/auth/login 401 204.885 ms - 44
+GET /api/auth/me 401 0.135 ms - 56
+✔ cuentas inactivas y sesiones expiradas pierden acceso (648.596333ms)
+GET /api/auth/entra 302 0.989 ms - 54
+GET /api/auth/entra/callback?code=falso&state=falso 302 0.290 ms - 61
+✔ Entra sin configuración y callback falso no crean sesión (2.731875ms)
+GET /api/auth/entra 302 7.233 ms - 463
+GET /api/auth/entra/callback?code=falso&state=incorrecto 302 0.334 ms - 61
+✔ redirección Entra usa PKCE, nonce y state firmado; rechaza state diferente (9.375916ms)
+POST /api/auth/login 400 0.172 ms - 53
+POST /api/auth/login 400 0.136 ms - 53
+POST /api/auth/login 400 0.111 ms - 53
+POST /api/auth/login 400 0.180 ms - 53
+POST /api/auth/login 400 0.113 ms - 53
+POST /api/auth/login 400 0.119 ms - 53
+POST /api/auth/login 400 0.111 ms - 53
+POST /api/auth/login 400 0.098 ms - 53
+POST /api/auth/login 400 0.128 ms - 53
+POST /api/auth/login 400 0.098 ms - 53
+POST /api/auth/login 429 0.139 ms - 62
+✔ limita intentos repetidos por IP (5.479167ms)
+GET /api/designer/layouts 200 3.104 ms - 461
+✔ US03 lista layouts disponibles para el Designer (200.325333ms)
+GET /api/designer/layouts/layout%20dummy 200 0.412 ms - 458
+✔ US11 al arrancar, el lienzo se carga desde la última versión guardada (3.386459ms)
+POST /api/designer/layouts 201 11.774 ms - 312
+PUT /api/designer/layouts/layout_1792986156659_cab94d/canvas 200 1.018 ms - 456
+✔ US03 crea layout y guarda elementos arrastrados al canvas (16.938667ms)
+POST /api/designer/layouts 400 0.775 ms - 64
+✔ US03 valida payloads inválidos (9.624125ms)
+✔ WEB_ORIGIN acepta varios orígenes y el primero es el principal (2.459084ms)
+✔ permite producción, staging y los previews de PR; rechaza dominios parecidos (0.273541ms)
+GET /api/reports 401 3.029 ms - 40
+✔ REP-08 HTTP sin sesion devuelve 401 (179.882125ms)
+GET /api/reports 403 1.085 ms - 51
+✔ REP-09 HTTP con sesion sin identidad permitida devuelve 403 (3.42875ms)
+GET /api/reports?kind=findings&search=%27%20OR%201%3D1%20-- 200 1.623 ms - 1192
+✔ REP-20 HTTP con sesion valida devuelve datos y filtros parametrizados (4.433375ms)
+GET /api/reports?userId=2 400 0.466 ms - 29
+GET /api/reports 403 1.236 ms - 30
+✔ REP-21 HTTP rechaza parametros para cambiar la identidad o un origen ajeno (7.175292ms)
+✔ REP-01 rechaza tipos filtros repetidos y fechas invalidas (1.33625ms)
+✔ REP-02 acepta texto como valor y no como SQL (0.383292ms)
+✔ REP-03 bloquea usuarios sin identidad de negocio (0.455625ms)
+✔ REP-04 entrega numeros fechas y alcance sin datos de autenticacion (0.433333ms)
+✔ REP-05 indicadores vacios cierres y planes vencidos (0.123916ms)
+✔ REP-06 propaga errores de BD sin usar datos simulados (0.110875ms)
+✔ REP-07 no devuelve resultados parciales al superar el limite (0.107166ms)
+POST /api/risks/classify 401 20.966 ms - 40
+GET /api/risk-library 401 0.426 ms - 40
+✔ US07 sin sesión no se clasifica ni se consulta la biblioteca (213.064084ms)
+POST /api/risks/classify 200 2.671 ms - 69
+✔ US07.2 y US07.3 la API calcula el puntaje y asigna el nivel (11.756916ms)
+POST /api/risks/classify 400 0.924 ms - 65
+POST /api/risks/classify 400 1.883 ms - 65
+POST /api/risks/classify 400 1.010 ms - 65
+POST /api/risks/classify 400 0.804 ms - 65
+POST /api/risks/classify 400 0.497 ms - 60
+POST /api/risks/classify 400 0.658 ms - 60
+✔ US07.1 rechaza probabilidad o impacto fuera de 1 a 5 o no enteros (21.935958ms)
+POST /api/risks/classify 403 0.663 ms - 30
+✔ US07 rechaza clasificar desde otro origen (4.536916ms)
+GET /api/risk-library 200 0.858 ms - 239
+GET /api/risk-library?search=%20fraude%20&department=Compras 200 0.367 ms - 128
+✔ US07 la biblioteca lista los riesgos y filtra por búsqueda y área (4.695333ms)
+GET /api/risk-library/R-002 200 0.729 ms - 119
+GET /api/risk-library/R-999 404 0.292 ms - 57
+✔ US07 la biblioteca regresa un riesgo por id o 404 si no existe (4.755084ms)
+✔ US07 calcula el puntaje como probabilidad × impacto (1.378042ms)
+✔ US07 asigna el nivel en los límites de cada rango (0.119ms)
+GET /api/risk-evaluations 401 2.549 ms - 40
+GET /api/risk-library 401 1.357 ms - 40
+POST /api/risk-evaluations 401 9.028 ms - 40
+✔ US07 las evaluaciones y la biblioteca piden sesión (359.232333ms)
+POST /api/risk-evaluations 400 1.538 ms - 52
+POST /api/risk-evaluations 400 0.384 ms - 52
+POST /api/risk-evaluations 400 0.841 ms - 65
+POST /api/risk-evaluations 400 0.590 ms - 65
+POST /api/risk-evaluations 400 0.316 ms - 65
+POST /api/risk-evaluations 400 0.258 ms - 60
+✔ US07.1 valida riesgo, probabilidad e impacto antes de guardar (20.859875ms)
+POST /api/risk-evaluations 404 3.602 ms - 59
+✔ US07 responde 404 si el riesgo no existe en la biblioteca (11.490375ms)
+GET /api/risk-evaluations?level=Alt%C3%ADsimo 400 0.858 ms - 43
+GET /api/risk-evaluations?search=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 400 0.442 ms - 55
+✔ US07 rechaza filtros inválidos del historial (4.893875ms)
+GET /api/users 200 19.186 ms - 369
+GET /api/users/roles 200 0.865 ms - 217
+✔ US02.1 el administrador consulta los usuarios con su rol y los roles disponibles (363.825ms)
+POST /api/users 201 298.759 ms - 201
+✔ US02 alta de usuario: genera el correo corporativo y guarda solo el hash de la contraseña (303.133916ms)
+POST /api/users 201 244.962 ms - 189
+✔ US02 si el correo ya existe agrega un número al final (247.095875ms)
+POST /api/users 400 231.920 ms - 40
+✔ US02 no crea el usuario si el rol no existe y revierte la transacción (233.951875ms)
+PUT /api/users/2/role 200 1.110 ms - 128
+✔ US02.2 asigna un rol nuevo a un usuario (3.38375ms)
+PUT /api/users/2/role 404 0.452 ms - 40
+PUT /api/users/99/role 404 0.291 ms - 40
+✔ US02.2 responde 404 si el usuario o el rol no existen (2.848083ms)
+PUT /api/users/1/role 409 0.718 ms - 66
+PUT /api/users/1/role 200 0.285 ms - 128
+✔ US02.3 no se puede quitar el rol al último administrador activo (4.276416ms)
+GET /api/users 401 9.286 ms - 40
+GET /api/users/roles 401 0.737 ms - 40
+✔ US02 sin sesión no se consultan usuarios (236.099542ms)
+GET /api/users 403 0.617 ms - 59
+GET /api/users/roles 403 0.151 ms - 59
+POST /api/users 403 7.578 ms - 59
+PUT /api/users/5/role 403 0.650 ms - 59
+✔ US02.4 un usuario que no es administrador recibe 403 en todo el módulo (27.750625ms)
+PUT /api/users/abc/role 400 0.414 ms - 42
+PUT /api/users/0/role 400 0.206 ms - 42
+PUT /api/users/5/role 400 0.192 ms - 38
+PUT /api/users/5/role 400 0.242 ms - 38
+✔ US02.2 valida los ids al cambiar de rol (6.79975ms)
+POST /api/users 400 0.645 ms - 58
+POST /api/users 400 0.574 ms - 58
+POST /api/users 400 0.553 ms - 45
+POST /api/users 400 0.245 ms - 45
+POST /api/users 400 0.286 ms - 36
+POST /api/users 400 0.629 ms - 67
+POST /api/users 400 0.577 ms - 67
+POST /api/users 400 0.637 ms - 70
+✔ US02 valida el alta de usuario antes de guardar (17.70375ms)
+POST /api/users 403 1.278 ms - 30
+✔ US02 rechaza el alta desde otro origen (6.887125ms)
+GET /api/apps/layout%20dummy/versions 401 1.816 ms - 40
+POST /api/apps/layout%20dummy/versions 403 6.858 ms - 30
+✔ US11 requiere sesión y rechaza escrituras desde otro origen (193.329334ms)
+POST /api/apps/layout%20dummy/versions 201 0.762 ms - 320
+POST /api/apps/layout%20dummy/versions 201 0.324 ms - 304
+✔ US11 guarda versiones numeradas con autor y cambios (5.32525ms)
+POST /api/apps/layout%20dummy/versions 201 0.306 ms - 300
+POST /api/apps/layout%20dummy/versions 201 0.572 ms - 215
+GET /api/apps/layout%20dummy/versions 200 0.441 ms - 372
+GET /api/apps/layout%20dummy/versions/1 200 0.610 ms - 300
+✔ US11 consulta el historial (más reciente primero) y el detalle con la configuración (5.588792ms)
+POST /api/apps/layout%20dummy/versions 201 0.329 ms - 300
+POST /api/apps/layout%20dummy/versions 201 0.268 ms - 300
+POST /api/apps/layout%20dummy/versions/1/publish 200 0.280 ms - 324
+POST /api/apps/layout%20dummy/versions/2/publish 200 0.134 ms - 324
+GET /api/apps/layout%20dummy/versions 200 0.117 ms - 421
+POST /api/apps/layout%20dummy/versions/1/publish 409 0.127 ms - 56
+✔ US11 publica un borrador y archiva la versión vigente anterior (6.12775ms)
+POST /api/apps/layout%20dummy/versions 201 0.177 ms - 300
+POST /api/apps/layout%20dummy/versions 201 0.152 ms - 230
+POST /api/apps/layout%20dummy/versions/1/restore 201 0.183 ms - 341
+✔ US11 restaura una configuración anterior como borrador nuevo sin borrar el historial (2.0635ms)
+GET /api/apps/layout%20dummy/versions/999 404 0.119 ms - 33
+GET /api/apps/layout%20dummy/versions/abc 404 0.097 ms - 33
+POST /api/apps/layout%20dummy/versions/999/restore 404 0.113 ms - 33
+✔ US11 responde 404 para versiones inexistentes o ids inválidos (1.833ms)
+POST /api/apps/layout%20dummy/versions 400 0.200 ms - 76
+POST /api/apps/layout%20dummy/versions 400 0.184 ms - 76
+POST /api/apps/layout%20dummy/versions 400 0.277 ms - 61
+POST /api/apps/layout%20dummy/versions 400 0.309 ms - 59
+POST /api/apps/layout%20dummy/versions 400 0.128 ms - 61
+✔ US11 valida config y cambios al guardar (4.334916ms)
+POST /api/apps/layout%20dummy/versions 201 0.260 ms - 40225
+✔ US11 acepta configuraciones mayores al límite general de 16 KB (1.086875ms)
+✔ US11 reglas de validación puras (0.360208ms)
+ℹ tests 84
+ℹ suites 0
+ℹ pass 84
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 35873.045458

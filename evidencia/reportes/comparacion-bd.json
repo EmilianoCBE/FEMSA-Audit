@@ -1,0 +1,177 @@
+{
+  "executedAt": "2026-10-26T03:41:15.666Z",
+  "database": "E12_FEMSA",
+  "mode": "Solo lectura sin cambios de datos ni sesiones",
+  "method": "Servicio real de API getReport y repositorio SQL comparados con SELECT independientes No es una sesion HTTP del navegador",
+  "note": "Los registros estan almacenados en SQL Su origen operativo o de pruebas no fue certificado",
+  "results": [
+    {
+      "kind": "audits",
+      "scope": "administrador",
+      "filter": {},
+      "sqlRows": 11,
+      "apiServiceRows": 11,
+      "unique": true,
+      "indicatorsMatchSql": true,
+      "result": "APROBADO"
+    },
+    {
+      "kind": "audits",
+      "scope": "administrador",
+      "filter": {
+        "status": "en_ejecucion"
+      },
+      "sqlRows": 6,
+      "apiServiceRows": 6,
+      "unique": true,
+      "indicatorsMatchSql": true,
+      "result": "APROBADO"
+    },
+    {
+      "kind": "audits",
+      "scope": "usuario limitado",
+      "filter": {},
+      "sqlRows": 0,
+      "apiServiceRows": 0,
+      "unique": true,
+      "indicatorsMatchSql": true,
+      "result": "APROBADO"
+    },
+    {
+      "kind": "audits",
+      "scope": "usuario limitado",
+      "filter": {
+        "status": "estado_sin_registros"
+      },
+      "sqlRows": 0,
+      "apiServiceRows": 0,
+      "unique": true,
+      "indicatorsMatchSql": true,
+      "result": "APROBADO"
+    },
+    {
+      "kind": "audits",
+      "test": "Busqueda con texto SQL no altera la consulta",
+      "result": "APROBADO"
+    },
+    {
+      "kind": "audits",
+      "test": "Periodo octubre 2026",
+      "sqlRows": 2,
+      "apiServiceRows": 2,
+      "result": "APROBADO"
+    },
+    {
+      "kind": "findings",
+      "scope": "administrador",
+      "filter": {},
+      "sqlRows": 14,
+      "apiServiceRows": 14,
+      "unique": true,
+      "indicatorsMatchSql": true,
+      "result": "APROBADO"
+    },
+    {
+      "kind": "findings",
+      "scope": "administrador",
+      "filter": {
+        "status": "esperando_plan"
+      },
+      "sqlRows": 1,
+      "apiServiceRows": 1,
+      "unique": true,
+      "indicatorsMatchSql": true,
+      "result": "APROBADO"
+    },
+    {
+      "kind": "findings",
+      "scope": "usuario limitado",
+      "filter": {},
+      "sqlRows": 0,
+      "apiServiceRows": 0,
+      "unique": true,
+      "indicatorsMatchSql": true,
+      "result": "APROBADO"
+    },
+    {
+      "kind": "findings",
+      "scope": "usuario limitado",
+      "filter": {
+        "status": "estado_sin_registros"
+      },
+      "sqlRows": 0,
+      "apiServiceRows": 0,
+      "unique": true,
+      "indicatorsMatchSql": true,
+      "result": "APROBADO"
+    },
+    {
+      "kind": "findings",
+      "test": "Busqueda con texto SQL no altera la consulta",
+      "result": "APROBADO"
+    },
+    {
+      "kind": "findings",
+      "test": "Periodo octubre 2026",
+      "sqlRows": 10,
+      "apiServiceRows": 10,
+      "result": "APROBADO"
+    },
+    {
+      "kind": "plans",
+      "scope": "administrador",
+      "filter": {},
+      "sqlRows": 8,
+      "apiServiceRows": 8,
+      "unique": true,
+      "indicatorsMatchSql": true,
+      "result": "APROBADO"
+    },
+    {
+      "kind": "plans",
+      "scope": "administrador",
+      "filter": {
+        "status": "en_progreso"
+      },
+      "sqlRows": 6,
+      "apiServiceRows": 6,
+      "unique": true,
+      "indicatorsMatchSql": true,
+      "result": "APROBADO"
+    },
+    {
+      "kind": "plans",
+      "scope": "usuario limitado",
+      "filter": {},
+      "sqlRows": 0,
+      "apiServiceRows": 0,
+      "unique": true,
+      "indicatorsMatchSql": true,
+      "result": "APROBADO"
+    },
+    {
+      "kind": "plans",
+      "scope": "usuario limitado",
+      "filter": {
+        "status": "estado_sin_registros"
+      },
+      "sqlRows": 0,
+      "apiServiceRows": 0,
+      "unique": true,
+      "indicatorsMatchSql": true,
+      "result": "APROBADO"
+    },
+    {
+      "kind": "plans",
+      "test": "Busqueda con texto SQL no altera la consulta",
+      "result": "APROBADO"
+    },
+    {
+      "kind": "plans",
+      "test": "Periodo octubre 2026",
+      "sqlRows": 6,
+      "apiServiceRows": 6,
+      "result": "APROBADO"
+    }
+  ]
+}

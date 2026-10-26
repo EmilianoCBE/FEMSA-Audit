@@ -1,0 +1,88 @@
+
+> femsa-audit@0.1.0 test:e2e
+> cypress run --spec cypress/e2e/reports.cy.ts
+
+
+================================================================================
+
+  (Run Starting)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Cypress:        16.1.1                                                                         │
+  │ Browser:        Electron 146 (headless) (deprecated)                                           │
+  │ Node Version:   v22.21.0 (/Users/prueba/.nvm/versions/node/v22.21.0/bin/node)                  │
+  │ Specs:          1 found (reports.cy.ts)                                                        │
+  │ Searched:       cypress/e2e/reports.cy.ts                                                      │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+Warning: The Electron browser is deprecated as a test browser and will be removed in a future version of Cypress.
+
+Switch to Chrome or another installed browser to avoid a breaking change when you upgrade.
+
+Read more about supported browsers: https://on.cypress.io/launching-browsers
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+                                                                                                    
+  Running:  reports.cy.ts                                                                   (1 of 1)
+
+
+  Reportes API y exportacion
+    ✓ REP-14 aplica filtros en la API y bloquea descargas pendientes (1591ms)
+    ✓ REP-15 exporta Auditorias a Excel y PDF (845ms)
+    ✓ REP-15 exporta Hallazgos a Excel y PDF (615ms)
+    ✓ REP-15 exporta Planes de accion a Excel y PDF (755ms)
+    ✓ REP-16 muestra vacios sin exportar y exige columnas (1440ms)
+    ✓ REP-17 muestra error de API sin reemplazarlo con ejemplos (577ms)
+    ✓ REP-18 permite configurar el reporte en movil (790ms)
+
+
+  7 passing (7s)
+
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        7                                                                                │
+  │ Passing:      7                                                                                │
+  │ Failing:      0                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  8                                                                                │
+  │ Video:        false                                                                            │
+  │ Duration:     6 seconds                                                                        │
+  │ Spec Ran:     reports.cy.ts                                                                    │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Screenshots)
+
+  -  /Users/prueba/Documents/GitHub/FEMSA-Audit/cypress/screenshots/reports.cy.ts/REP    (2000x1320)
+     -14-filtros-api.png                                                                            
+  -  /Users/prueba/Documents/GitHub/FEMSA-Audit/cypress/screenshots/reports.cy.ts/REP    (2000x1320)
+     -15-audits-vista.png                                                                           
+  -  /Users/prueba/Documents/GitHub/FEMSA-Audit/cypress/screenshots/reports.cy.ts/REP    (2000x1320)
+     -15-findings-vista.png                                                                         
+  -  /Users/prueba/Documents/GitHub/FEMSA-Audit/cypress/screenshots/reports.cy.ts/REP    (2000x1320)
+     -15-plans-vista.png                                                                            
+  -  /Users/prueba/Documents/GitHub/FEMSA-Audit/cypress/screenshots/reports.cy.ts/REP    (2000x1320)
+     -16-sin-columnas.png                                                                           
+  -  /Users/prueba/Documents/GitHub/FEMSA-Audit/cypress/screenshots/reports.cy.ts/REP    (2000x1320)
+     -16-sin-resultados.png                                                                         
+  -  /Users/prueba/Documents/GitHub/FEMSA-Audit/cypress/screenshots/reports.cy.ts/REP    (2000x1320)
+     -17-error-bd.png                                                                               
+  -  /Users/prueba/Documents/GitHub/FEMSA-Audit/cypress/screenshots/reports.cy.ts/REP     (780x3646)
+     -18-movil.png                                                                                  
+
+
+================================================================================
+
+  (Run Finished)
+
+
+       Spec                                              Tests  Passing  Failing  Pending  Skipped  
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ ✔  reports.cy.ts                            00:06        7        7        -        -        - │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+    ✔  All specs passed!                        00:06        7        7        -        -        -  
+

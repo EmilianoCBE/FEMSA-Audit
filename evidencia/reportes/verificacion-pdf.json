@@ -1,0 +1,20 @@
+[
+  {
+    "kind": "audits",
+    "pages": 1,
+    "rowsFound": 11,
+    "result": "APROBADO"
+  },
+  {
+    "kind": "findings",
+    "pages": 2,
+    "rowsFound": 14,
+    "result": "APROBADO"
+  },
+  {
+    "kind": "plans",
+    "pages": 1,
+    "rowsFound": 8,
+    "result": "APROBADO"
+  }
+]

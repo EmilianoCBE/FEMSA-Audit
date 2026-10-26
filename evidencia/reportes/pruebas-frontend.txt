@@ -1,0 +1,16 @@
+
+> femsa-audit@0.1.0 test
+> vitest run
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - import "./vite.config" without a file extension (vitest.config.ts:2:24). Add the file extension
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+ RUN  v5.0.3 /Users/prueba/Documents/GitHub/FEMSA-Audit
+
+
+ Test Files  9 passed (9)
+      Tests  42 passed (42)
+   Start at  21:42:01
+   Duration  664ms (import 44%, transform 32%, tests 22%, worker 3%)
+

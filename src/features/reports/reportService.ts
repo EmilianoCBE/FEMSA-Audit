@@ -1,5 +1,9 @@
-import { findingsService } from "@/features/inbox/services/findingsService";
+import { httpClient } from "@/shared/api/httpClient";
+import type { ReportData, ReportFilters, ReportKind } from "./reportModel";
 
-// Cuando exista la API de hallazgos se cambia esta fuente sin tocar la pantalla
-// Por ahora dejamos claro que la bandeja usa datos de ejemplo
-export const reportService = { list: findingsService.list };
+export const reportService = {
+  list: (kind: ReportKind, filters: ReportFilters, signal?: AbortSignal) => {
+    const query = new URLSearchParams({ kind, ...filters });
+    return httpClient.get<ReportData>(`/reports?${query}`, signal);
+  },
+};

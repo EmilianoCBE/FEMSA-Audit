@@ -1,70 +1,77 @@
 import { describe, expect, it } from "vitest";
 import ExcelJS from "exceljs";
-import type { Finding } from "@/features/inbox/types";
-import { buildSnapshot, EMPTY_FILTERS, FIELDS, filterFindings } from "./reportModel";
+import { buildSnapshot, displayValue, EMPTY_FILTERS, type ReportData } from "./reportModel";
 import { createExcel, createPdf } from "./reportExport";
 
-const rows: Finding[] = [
-  {
-    id: "H1",
-    title: "=SUM(A1:A9)",
-    businessUnit: "Unidad A",
-    auditName: "TI",
-    status: "in-review",
-    severity: "high",
-    waitingDays: 10,
-  },
-  {
-    id: "H2",
-    title: "Cerrado",
-    businessUnit: "Unidad B",
-    auditName: "Finanzas",
-    status: "closed",
-    severity: "low",
-    waitingDays: null,
-  },
-];
-
-describe("reportes GRC", () => {
-  it("combina filtros sin cambiar la fuente", () => {
-    expect(filterFindings(rows, { ...EMPTY_FILTERS, businessUnit: "Unidad A", status: "closed" })).toEqual([]);
-    expect(filterFindings(rows, { ...EMPTY_FILTERS, search: "ti", severity: "high" }).map((row) => row.id)).toEqual([
-      "H1",
+const data: ReportData = {
+  kind: "findings",
+  fields: [
+    { id: "id", label: "Folio" },
+    { id: "title", label: "Descripcion" },
+    { id: "amount", label: "Impacto MXN", type: "number" },
+    { id: "date", label: "Fecha", type: "date" },
+  ],
+  rows: [
+    { recordId: 1, id: "H1", title: "=SUM(A1:A9)", amount: 123.45, date: "2026-10-01T00:00:00.000Z" },
+    { recordId: 2, id: "H2", title: "Otro hallazgo", amount: null, date: null },
+  ],
+  filters: EMPTY_FILTERS,
+  indicators: [
+    { id: "total", label: "Total", value: 2, percent: false },
+    { id: "closedPercent", label: "Porcentaje de cierre", value: 50, percent: true },
+  ],
+  source: "E12_FEMSA | FINDING + AUDIT",
+  scope: "Datos controlados de prueba",
+  queriedAt: "2026-10-25T12:00:00Z",
+};
+describe("Reportes con API", () => {
+  it("REP-10 exporta exactamente las columnas y los indicadores seleccionados", () => {
+    const report = buildSnapshot(data, ["id", "amount"], ["total"], "Seguimiento");
+    expect(report.rows).toEqual([
+      ["H1", 123.45],
+      ["H2", null],
     ]);
-    expect(rows).toHaveLength(2);
+    expect(report.indicators.map((item) => item.id)).toEqual(["total"]);
+    expect(report.source).toBe(data.source);
   });
-  it("calcula indicadores sobre la seleccion y maneja una seleccion vacia", () => {
-    const report = buildSnapshot(rows, ["id"], ["total", "open", "high", "closedPercent"], EMPTY_FILTERS, "");
-    expect(report.indicators.map((item) => item.value)).toEqual([2, 1, 1, 50]);
-    expect(report.rows).toEqual([["H1"], ["H2"]]);
-    const empty = buildSnapshot(rows, ["id"], ["closedPercent"], { ...EMPTY_FILTERS, search: "sin coincidencias" }, "");
-    expect(empty.indicators[0].value).toBe(0);
+  it("REP-11 conserva los filtros y no modifica la respuesta de la API", () => {
+    const filtered = { ...data, filters: { ...EMPTY_FILTERS, status: "abierto" } };
+    expect(buildSnapshot(filtered, ["id"], [], "").filters).toContain("Estado: abierto");
+    expect(data.fields).toHaveLength(4);
+    expect(displayValue(null, data.fields[0])).toBe("Sin dato");
   });
-  it("genera Excel con valores numericos y texto que no se ejecuta como formula", async () => {
-    const report = buildSnapshot(rows, ["title", "waitingDays"], ["closedPercent"], EMPTY_FILTERS, "Seguimiento");
-    const blob = await createExcel(report);
+  it("REP-12 Excel conserva numeros fechas y texto sin ejecutar formulas", async () => {
+    const blob = await createExcel(
+      buildSnapshot(
+        data,
+        data.fields.map((field) => field.id),
+        ["closedPercent"],
+        "Seguimiento",
+      ),
+    );
     const book = new ExcelJS.Workbook();
     await book.xlsx.load(await blob.arrayBuffer());
-    const detail = book.getWorksheet("Hallazgos");
-    if (!detail) throw new Error("Falta la hoja de hallazgos");
-    expect(detail.getRow(1).values).toEqual([undefined, "Hallazgo", "Dias en espera"]);
-    expect(detail.getCell("A2").value).toBe("=SUM(A1:A9)");
-    expect(detail.getCell("B2").value).toBe(10);
-    expect(detail.getCell("B3").value).toBeNull();
-    expect(book.getWorksheet("Reporte")?.getCell("B10").value).toBe(0.5);
-    expect(book.getWorksheet("Reporte")?.getCell("A2").text).toContain("Datos de ejemplo");
+    const sheet = book.getWorksheet("Detalle");
+    if (!sheet) throw new Error("Falta el detalle");
+    expect(sheet.getCell("B2").value).toBe("=SUM(A1:A9)");
+    expect(sheet.getCell("C2").value).toBe(123.45);
+    expect(sheet.getCell("D2").value).toEqual(new Date("2026-10-01T00:00:00.000Z"));
+    expect(sheet.getCell("C3").value).toBeNull();
+    expect(book.getWorksheet("Reporte")?.getCell("A2").text).toContain("E12_FEMSA");
   });
-  it("genera PDF paginado con todas las columnas y textos largos", async () => {
-    const many = Array.from({ length: 100 }, (_, i) => ({
-      ...rows[0],
-      id: `H${i}`,
-      title: "Descripcion extensa del hallazgo para comprobar los saltos de linea y el seguimiento ".repeat(3),
-    }));
+  it("REP-13 PDF pagina tablas largas sin perder el ultimo registro", async () => {
+    const many = {
+      ...data,
+      rows: Array.from({ length: 100 }, (_, i) => ({
+        ...data.rows[0],
+        id: `H${i}`,
+        title: "Descripcion larga de seguimiento ".repeat(8),
+      })),
+    };
     const report = buildSnapshot(
       many,
-      FIELDS.map((field) => field.id),
+      data.fields.map((field) => field.id),
       ["total"],
-      EMPTY_FILTERS,
       "Seguimiento",
     );
     const blob = await createPdf(report);
@@ -72,6 +79,7 @@ describe("reportes GRC", () => {
     expect(text.startsWith("%PDF-")).toBe(true);
     expect((text.match(/\/Type \/Page\b/g) ?? []).length).toBeGreaterThan(1);
     expect(text).toContain("H99");
-    expect(text).toContain("Datos de ejemplo");
+    expect(text).toContain("E12_FEMSA");
+    expect(text).not.toContain("Datos de ejemplo");
   });
 });

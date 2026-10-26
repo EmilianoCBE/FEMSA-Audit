@@ -1,0 +1,473 @@
+[
+  {
+    "kind": "audits",
+    "fields": [
+      {
+        "id": "id",
+        "label": "Folio"
+      },
+      {
+        "id": "status",
+        "label": "Estado"
+      },
+      {
+        "id": "severity",
+        "label": "Prioridad"
+      },
+      {
+        "id": "date",
+        "label": "Fecha de inicio",
+        "type": "date"
+      },
+      {
+        "id": "endDate",
+        "label": "Fecha de fin",
+        "type": "date"
+      }
+    ],
+    "rows": [
+      {
+        "id": "AUD-000001",
+        "status": "en_ejecucion",
+        "severity": "Alta",
+        "date": "2026-08-27T00:00:00.000Z",
+        "endDate": "2026-10-15T00:00:00.000Z"
+      },
+      {
+        "id": "AUD-000002",
+        "status": "en_ejecucion",
+        "severity": "Alta",
+        "date": "2026-09-11T00:00:00.000Z",
+        "endDate": "2026-10-24T00:00:00.000Z"
+      },
+      {
+        "id": "AUD-000003",
+        "status": "pendiente",
+        "severity": "Alta",
+        "date": "2026-10-11T00:00:00.000Z",
+        "endDate": "2026-11-20T00:00:00.000Z"
+      },
+      {
+        "id": "AUD-000004",
+        "status": "cerrada",
+        "severity": "Baja",
+        "date": "2026-07-08T00:00:00.000Z",
+        "endDate": "2026-09-16T00:00:00.000Z"
+      },
+      {
+        "id": "AUD-000005",
+        "status": "en_aprobacion",
+        "severity": "Media",
+        "date": "2026-08-07T00:00:00.000Z",
+        "endDate": "2026-10-04T00:00:00.000Z"
+      },
+      {
+        "id": "AUD-000006",
+        "status": "en_ejecucion",
+        "severity": "Media",
+        "date": "2026-09-21T00:00:00.000Z",
+        "endDate": "2026-11-05T00:00:00.000Z"
+      },
+      {
+        "id": "AUD-000007",
+        "status": "en_ejecucion",
+        "severity": "Alta",
+        "date": "2026-09-16T00:00:00.000Z",
+        "endDate": "2026-10-18T00:00:00.000Z"
+      },
+      {
+        "id": "AUD-000008",
+        "status": "en_ejecucion",
+        "severity": "Alta",
+        "date": "2026-09-06T00:00:00.000Z",
+        "endDate": "2026-10-12T00:00:00.000Z"
+      },
+      {
+        "id": "AUD-000009",
+        "status": "en_aprobacion",
+        "severity": "Media",
+        "date": "2026-07-28T00:00:00.000Z",
+        "endDate": "2026-10-01T00:00:00.000Z"
+      },
+      {
+        "id": "AUD-000010",
+        "status": "pendiente",
+        "severity": "Media",
+        "date": "2026-10-13T00:00:00.000Z",
+        "endDate": "2026-11-25T00:00:00.000Z"
+      },
+      {
+        "id": "AUD-000011",
+        "status": "en_ejecucion",
+        "severity": "Baja",
+        "date": "2026-09-26T00:00:00.000Z",
+        "endDate": "2026-11-10T00:00:00.000Z"
+      }
+    ],
+    "filters": {
+      "kind": "audits",
+      "search": "",
+      "businessUnit": "",
+      "status": "",
+      "severity": "",
+      "start": "",
+      "end": ""
+    },
+    "indicators": [
+      {
+        "id": "total",
+        "label": "Total de registros",
+        "value": 11,
+        "percent": false
+      },
+      {
+        "id": "open",
+        "label": "Registros abiertos",
+        "value": 10,
+        "percent": false
+      },
+      {
+        "id": "closedPercent",
+        "label": "Porcentaje de cierre",
+        "value": 9.090909090909092,
+        "percent": true
+      }
+    ],
+    "queriedAt": "2026-10-26T03:41:00.053Z",
+    "source": "E12_FEMSA | AUDIT + BUSINESS_UNIT + USER",
+    "scope": "Todas las auditorias"
+  },
+  {
+    "kind": "findings",
+    "fields": [
+      {
+        "id": "id",
+        "label": "Folio"
+      },
+      {
+        "id": "status",
+        "label": "Estado"
+      },
+      {
+        "id": "severity",
+        "label": "Severidad"
+      },
+      {
+        "id": "date",
+        "label": "Fecha de identificacion",
+        "type": "date"
+      },
+      {
+        "id": "amount",
+        "label": "Impacto MXN",
+        "type": "number"
+      }
+    ],
+    "rows": [
+      {
+        "id": "FND-000001",
+        "status": "esperando_plan",
+        "severity": "Crítica",
+        "date": "2026-09-30T00:33:54.850Z",
+        "amount": 1850000
+      },
+      {
+        "id": "FND-000002",
+        "status": "abierto",
+        "severity": "Alta",
+        "date": "2026-10-01T00:33:54.850Z",
+        "amount": 920000
+      },
+      {
+        "id": "FND-000003",
+        "status": "en_seguimiento",
+        "severity": "Crítica",
+        "date": "2026-10-02T00:33:54.850Z",
+        "amount": 3400000
+      },
+      {
+        "id": "FND-000004",
+        "status": "en_seguimiento",
+        "severity": "Moderada",
+        "date": "2026-08-29T00:33:54.850Z",
+        "amount": 210000
+      },
+      {
+        "id": "FND-000005",
+        "status": "en_seguimiento",
+        "severity": "Moderada",
+        "date": "2026-09-27T00:33:54.850Z",
+        "amount": 150000
+      },
+      {
+        "id": "FND-000006",
+        "status": "abierto",
+        "severity": "Baja",
+        "date": "2026-10-04T00:33:54.850Z",
+        "amount": 45000
+      },
+      {
+        "id": "FND-000007",
+        "status": "abierto",
+        "severity": "Crítica",
+        "date": "2026-10-01T00:33:54.850Z",
+        "amount": 2600000
+      },
+      {
+        "id": "FND-000008",
+        "status": "revision_jefe",
+        "severity": "Alta",
+        "date": "2026-10-03T00:33:54.850Z",
+        "amount": 780000
+      },
+      {
+        "id": "FND-000009",
+        "status": "abierto",
+        "severity": "Moderada",
+        "date": "2026-10-02T00:33:54.850Z",
+        "amount": 340000
+      },
+      {
+        "id": "FND-000010",
+        "status": "en_seguimiento",
+        "severity": "Alta",
+        "date": "2026-09-16T00:33:54.850Z",
+        "amount": null
+      },
+      {
+        "id": "FND-000011",
+        "status": "abierto",
+        "severity": "Moderada",
+        "date": "2026-10-04T00:33:54.850Z",
+        "amount": 95000
+      },
+      {
+        "id": "FND-000013",
+        "status": "abierto",
+        "severity": "Alta",
+        "date": "2026-10-16T03:25:29.000Z",
+        "amount": 450
+      },
+      {
+        "id": "FND-000014",
+        "status": "abierto",
+        "severity": "Alta",
+        "date": "2026-10-20T06:41:47.000Z",
+        "amount": 2300000
+      },
+      {
+        "id": "FND-000015",
+        "status": "abierto",
+        "severity": "Alta",
+        "date": "2026-10-20T18:02:18.000Z",
+        "amount": 1284500
+      }
+    ],
+    "filters": {
+      "kind": "findings",
+      "search": "",
+      "businessUnit": "",
+      "status": "",
+      "severity": "",
+      "start": "",
+      "end": ""
+    },
+    "indicators": [
+      {
+        "id": "total",
+        "label": "Total de registros",
+        "value": 14,
+        "percent": false
+      },
+      {
+        "id": "open",
+        "label": "Registros abiertos",
+        "value": 14,
+        "percent": false
+      },
+      {
+        "id": "closedPercent",
+        "label": "Porcentaje de cierre",
+        "value": 0,
+        "percent": true
+      },
+      {
+        "id": "high",
+        "label": "Abiertos de severidad alta o critica",
+        "value": 9,
+        "percent": false
+      }
+    ],
+    "queriedAt": "2026-10-26T03:41:06.239Z",
+    "source": "E12_FEMSA | FINDING + AUDIT + BUSINESS_UNIT + USER",
+    "scope": "Todas las auditorias"
+  },
+  {
+    "kind": "plans",
+    "fields": [
+      {
+        "id": "id",
+        "label": "Folio"
+      },
+      {
+        "id": "status",
+        "label": "Estado"
+      },
+      {
+        "id": "severity",
+        "label": "Severidad"
+      },
+      {
+        "id": "date",
+        "label": "Fecha compromiso",
+        "type": "date"
+      },
+      {
+        "id": "endDate",
+        "label": "Fecha de conclusion",
+        "type": "date"
+      },
+      {
+        "id": "progress",
+        "label": "Avance %",
+        "type": "number"
+      },
+      {
+        "id": "lastProgress",
+        "label": "Ultimo avance",
+        "type": "date"
+      },
+      {
+        "id": "amount",
+        "label": "Monto MXN",
+        "type": "number"
+      }
+    ],
+    "rows": [
+      {
+        "id": "RP-000001",
+        "status": "en_progreso",
+        "severity": "Crítica",
+        "date": "2026-10-10T00:00:00.000Z",
+        "endDate": null,
+        "progress": 60,
+        "lastProgress": "2026-10-05T00:33:54.850Z",
+        "amount": 3400000
+      },
+      {
+        "id": "RP-000002",
+        "status": "en_progreso",
+        "severity": "Crítica",
+        "date": "2026-10-31T00:00:00.000Z",
+        "endDate": null,
+        "progress": 20,
+        "lastProgress": null,
+        "amount": 0
+      },
+      {
+        "id": "RP-000003",
+        "status": "en_progreso",
+        "severity": "Moderada",
+        "date": "2026-09-30T00:00:00.000Z",
+        "endDate": null,
+        "progress": 75,
+        "lastProgress": "2026-10-06T14:23:41.753Z",
+        "amount": 210000
+      },
+      {
+        "id": "RP-000004",
+        "status": "revision_grc",
+        "severity": "Moderada",
+        "date": "2026-10-20T00:00:00.000Z",
+        "endDate": "2026-10-05T00:33:54.850Z",
+        "progress": 100,
+        "lastProgress": "2026-10-05T00:33:54.850Z",
+        "amount": 150000
+      },
+      {
+        "id": "RP-000005",
+        "status": "en_progreso",
+        "severity": "Moderada",
+        "date": "2026-10-07T00:00:00.000Z",
+        "endDate": null,
+        "progress": 20,
+        "lastProgress": "2026-10-06T14:41:24.564Z",
+        "amount": 0
+      },
+      {
+        "id": "RP-000006",
+        "status": "en_progreso",
+        "severity": "Alta",
+        "date": "2026-10-16T00:00:00.000Z",
+        "endDate": null,
+        "progress": 45,
+        "lastProgress": "2026-10-02T00:33:54.850Z",
+        "amount": 0
+      },
+      {
+        "id": "RP-000007",
+        "status": "en_progreso",
+        "severity": "Alta",
+        "date": "2026-10-03T00:00:00.000Z",
+        "endDate": null,
+        "progress": 30,
+        "lastProgress": "2026-09-27T00:33:54.850Z",
+        "amount": 0
+      },
+      {
+        "id": "RP-000008",
+        "status": "abierto",
+        "severity": "Crítica",
+        "date": "2026-11-01T05:59:59.999Z",
+        "endDate": null,
+        "progress": 0,
+        "lastProgress": null,
+        "amount": 2300000
+      }
+    ],
+    "filters": {
+      "kind": "plans",
+      "search": "",
+      "businessUnit": "",
+      "status": "",
+      "severity": "",
+      "start": "",
+      "end": ""
+    },
+    "indicators": [
+      {
+        "id": "total",
+        "label": "Total de registros",
+        "value": 8,
+        "percent": false
+      },
+      {
+        "id": "open",
+        "label": "Registros abiertos",
+        "value": 8,
+        "percent": false
+      },
+      {
+        "id": "closedPercent",
+        "label": "Porcentaje de cierre",
+        "value": 0,
+        "percent": true
+      },
+      {
+        "id": "overdue",
+        "label": "Planes vencidos sin concluir",
+        "value": 5,
+        "percent": false
+      },
+      {
+        "id": "averageProgress",
+        "label": "Avance promedio",
+        "value": 43.75,
+        "percent": true
+      }
+    ],
+    "queriedAt": "2026-10-26T03:41:11.147Z",
+    "source": "E12_FEMSA | REMEDIATION_PLAN + FINDING + AUDIT + BUSINESS_UNIT + USER + PLAN_PROGRESS",
+    "scope": "Todas las auditorias"
+  }
+]

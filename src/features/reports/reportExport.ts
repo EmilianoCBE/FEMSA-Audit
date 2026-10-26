@@ -1,4 +1,4 @@
-import { SOURCE_NOTICE, type ReportSnapshot } from "./reportModel";
+import { displayValue, type ReportKind, type ReportSnapshot } from "./reportModel";
 
 export async function createExcel(report: ReportSnapshot): Promise<Blob> {
   const { default: ExcelJS } = await import("exceljs");
@@ -9,12 +9,14 @@ export async function createExcel(report: ReportSnapshot): Promise<Blob> {
   info.columns = [{ width: 46 }, { width: 90 }];
   info.addRows([
     [report.title],
-    [SOURCE_NOTICE],
+    [report.source],
     ["Generado", report.generatedAt],
     ["Filtros", report.filters],
     ["Registros", report.rows.length],
     ["Calculo", "Indicadores sobre los registros filtrados"],
-    ["Porcentaje de cierre", "Hallazgos cerrados / total de hallazgos filtrados"],
+    ["Consulta de datos", report.queriedAt],
+    ["Alcance", report.scope],
+    ["Porcentaje de cierre", "Cerrados / total de registros filtrados"],
     [],
     ["Indicador", "Valor"],
   ]);
@@ -23,14 +25,23 @@ export async function createExcel(report: ReportSnapshot): Promise<Blob> {
     const row = info.addRow([indicator.label, indicator.percent ? indicator.value / 100 : indicator.value]);
     if (indicator.percent) row.getCell(2).numFmt = "0.0%";
   }
-  const detail = workbook.addWorksheet("Hallazgos", { views: [{ state: "frozen", ySplit: 1 }] });
+  const detail = workbook.addWorksheet("Detalle", { views: [{ state: "frozen", ySplit: 1 }] });
   detail.columns = report.fields.map((field) => ({
     header: field.label,
     key: field.id,
     width: field.id === "title" ? 65 : 30,
   }));
   // Guardamos texto como texto para que no se convierta en formulas
-  for (const values of report.rows) detail.addRow(values);
+  for (const values of report.rows) {
+    const row = detail.addRow(
+      values.map((value, index) =>
+        value !== null && report.fields[index].type === "date" ? new Date(String(value)) : value,
+      ),
+    );
+    report.fields.forEach((field, index) => {
+      if (field.type === "date") row.getCell(index + 1).numFmt = "yyyy-mm-dd";
+    });
+  }
   detail.autoFilter = {
     from: { row: 1, column: 1 },
     to: { row: report.rows.length + 1, column: report.fields.length },
@@ -57,9 +68,11 @@ export async function createPdf(report: ReportSnapshot): Promise<Blob> {
   doc.text(titleLines, 14, 16);
   let y = 19 + titleLines.length * 6;
   doc.setFontSize(9);
-  // El aviso tambien va en los archivos para no confundir los datos
+  // La fuente y la fecha de consulta tambien van en los archivos
   const metadata = [
-    SOURCE_NOTICE.replace("—", "-"),
+    report.source,
+    `Consulta: ${report.queriedAt}`,
+    `Alcance: ${report.scope}`,
     `Generado: ${report.generatedAt.toLocaleString("es-MX")}`,
     report.filters,
     `${report.rows.length} registros | Indicadores sobre los registros filtrados`,
@@ -85,7 +98,7 @@ export async function createPdf(report: ReportSnapshot): Promise<Blob> {
   autoTable(doc, {
     startY: y,
     head: [report.fields.map((field) => field.label)],
-    body: report.rows.map((row) => row.map((value) => value ?? "Sin dato")),
+    body: report.rows.map((row) => row.map((value, index) => displayValue(value, report.fields[index]))),
     styles: { fontSize: 8, overflow: "linebreak", cellPadding: 2 },
     margin: { top: 14, bottom: 16 },
     rowPageBreak: "avoid",
@@ -94,16 +107,16 @@ export async function createPdf(report: ReportSnapshot): Promise<Blob> {
   for (let page = 1; page <= pages; page++) {
     doc.setPage(page);
     doc.setFontSize(8);
-    doc.text(`FEMSA GRC | Datos de ejemplo | Pagina ${page} de ${pages}`, 14, doc.internal.pageSize.getHeight() - 7);
+    doc.text(`FEMSA GRC | Pagina ${page} de ${pages}`, 14, doc.internal.pageSize.getHeight() - 7);
   }
   return doc.output("blob");
 }
 
-export function downloadReport(blob: Blob, format: "xlsx" | "pdf") {
+export function downloadReport(blob: Blob, format: "xlsx" | "pdf", kind: ReportKind) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = `reporte-grc-ejemplo-${new Date().toISOString().slice(0, 10)}.${format}`;
+  link.download = `reporte-grc-${kind}-${new Date().toISOString().slice(0, 10)}.${format}`;
   link.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

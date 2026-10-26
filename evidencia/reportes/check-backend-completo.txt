@@ -1,0 +1,5 @@
+
+> @femsa-audit/api@1.0.0 check
+> biome ci .
+
+[0m[34mChecked 74 files in 60[0m[0m[2m[34mms[0m[0m[34m.[0m[0m[34m No fixes applied.[0m

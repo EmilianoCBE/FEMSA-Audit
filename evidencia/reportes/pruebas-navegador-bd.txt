@@ -1,0 +1,74 @@
+
+> femsa-audit@0.1.0 test:e2e
+> cypress run --config specPattern=cypress/evidence/*.cy.ts
+
+
+================================================================================
+
+  (Run Starting)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Cypress:        16.1.1                                                                         │
+  │ Browser:        Electron 146 (headless) (deprecated)                                           │
+  │ Node Version:   v22.21.0 (/Users/prueba/.nvm/versions/node/v22.21.0/bin/node)                  │
+  │ Specs:          1 found (reports-db.cy.ts)                                                     │
+  │ Searched:       cypress/evidence/*.cy.ts                                                       │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+Warning: The Electron browser is deprecated as a test browser and will be removed in a future version of Cypress.
+
+Switch to Chrome or another installed browser to avoid a breaking change when you upgrade.
+
+Read more about supported browsers: https://on.cypress.io/launching-browsers
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+                                                                                                    
+  Running:  reports-db.cy.ts                                                                (1 of 1)
+
+
+  Evidencia con respuestas verificadas de E12_FEMSA
+    ✓ REP-19 exporta respuesta de BD audits (1458ms)
+    ✓ REP-19 exporta respuesta de BD findings (685ms)
+    ✓ REP-19 exporta respuesta de BD plans (827ms)
+
+
+  3 passing (3s)
+
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        3                                                                                │
+  │ Passing:      3                                                                                │
+  │ Failing:      0                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  3                                                                                │
+  │ Video:        false                                                                            │
+  │ Duration:     2 seconds                                                                        │
+  │ Spec Ran:     reports-db.cy.ts                                                                 │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Screenshots)
+
+  -  /Users/prueba/Documents/GitHub/FEMSA-Audit/cypress/screenshots/reports-db.cy.ts/    (2000x1320)
+     REP-19-bd-audits.png                                                                           
+  -  /Users/prueba/Documents/GitHub/FEMSA-Audit/cypress/screenshots/reports-db.cy.ts/    (2000x1320)
+     REP-19-bd-findings.png                                                                         
+  -  /Users/prueba/Documents/GitHub/FEMSA-Audit/cypress/screenshots/reports-db.cy.ts/    (2000x1320)
+     REP-19-bd-plans.png                                                                            
+
+
+================================================================================
+
+  (Run Finished)
+
+
+       Spec                                              Tests  Passing  Failing  Pending  Skipped  
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ ✔  reports-db.cy.ts                         00:02        3        3        -        -        - │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+    ✔  All specs passed!                        00:02        3        3        -        -        -  
+

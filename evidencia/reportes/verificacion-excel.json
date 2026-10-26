@@ -1,0 +1,23 @@
+[
+  {
+    "kind": "audits",
+    "rows": 11,
+    "fields": 5,
+    "result": "APROBADO",
+    "check": "Todas las celdas coinciden incluyendo tipos de fecha y numero"
+  },
+  {
+    "kind": "findings",
+    "rows": 14,
+    "fields": 5,
+    "result": "APROBADO",
+    "check": "Todas las celdas coinciden incluyendo tipos de fecha y numero"
+  },
+  {
+    "kind": "plans",
+    "rows": 8,
+    "fields": 8,
+    "result": "APROBADO",
+    "check": "Todas las celdas coinciden incluyendo tipos de fecha y numero"
+  }
+]
