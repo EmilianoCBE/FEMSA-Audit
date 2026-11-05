@@ -1,3 +1,4 @@
+import { usePermissions } from "@/features/auth/permissions";
 import { useCallback, useState } from "react";
 import { useQuery } from "@/shared/hooks/useQuery";
 import { Button, ContentArea, EmptyState, QueryState, SectionToolbar } from "@/shared/ui";
@@ -43,6 +44,7 @@ type AppVersionHistoryProps = {
 
 // US11 - Rafael Valdez: guardar, consultar, publicar y restaurar versiones de la aplicación seleccionada.
 function AppVersionHistory({ appId, plantillas, onSelectApp }: AppVersionHistoryProps) {
+  const canEdit = usePermissions().permissions["app-builder"] === "edit";
   const listVersions = useCallback((signal: AbortSignal) => versionsService.list(appId, signal), [appId]);
   const query = useQuery(listVersions);
   const [details, setDetails] = useState<Record<string, AppVersionDetail>>({});
@@ -52,6 +54,7 @@ function AppVersionHistory({ appId, plantillas, onSelectApp }: AppVersionHistory
   const [error, setError] = useState<string>();
 
   async function run(action: () => Promise<string>, fallbackError: string) {
+    if (!canEdit) return;
     setIsBusy(true);
     setMessage(undefined);
     setError(undefined);
@@ -107,7 +110,7 @@ function AppVersionHistory({ appId, plantillas, onSelectApp }: AppVersionHistory
         action={
           <div className="flex gap-2">
             <Button>Comparar versiones</Button>
-            <Button variant="primary" disabled={isSaving} onClick={() => setIsSaving(true)}>
+            <Button variant="primary" disabled={!canEdit || isSaving} onClick={() => setIsSaving(true)}>
               Guardar versión
             </Button>
           </div>
@@ -132,7 +135,9 @@ function AppVersionHistory({ appId, plantillas, onSelectApp }: AppVersionHistory
         </select>
       </div>
 
-      {isSaving && <SaveVersionForm disabled={isBusy} onCancel={() => setIsSaving(false)} onSave={saveVersion} />}
+      {isSaving && (
+        <SaveVersionForm disabled={!canEdit || isBusy} onCancel={() => setIsSaving(false)} onSave={saveVersion} />
+      )}
 
       {error && (
         <div role="alert" className="mb-3 rounded-md border border-red-line bg-red-bg px-3 py-2 text-body-sm text-red">
@@ -162,7 +167,7 @@ function AppVersionHistory({ appId, plantillas, onSelectApp }: AppVersionHistory
                   key={version.id}
                   version={version}
                   detail={details[version.id]}
-                  disabled={isBusy}
+                  disabled={!canEdit || isBusy}
                   onView={toggleDetail}
                   onPublish={publishVersion}
                   onRestore={restoreVersion}

@@ -1,3 +1,4 @@
+import { usePermissions } from "@/features/auth/permissions";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@/shared/hooks/useQuery";
 import { Button, ContentArea, QueryState, SectionToolbar, SegmentedControl, type SegmentedOption } from "@/shared/ui";
@@ -102,6 +103,7 @@ const VISTAS_PANEL_DESIGNER: readonly SegmentedOption<VistaPanelDesigner>[] = [
 
 // TODO(US03 - Magda): conectar reordenamiento entre secciones si el equipo requiere persistir orden manual.
 export function FieldsPanel() {
+  const canEdit = usePermissions().permissions["app-builder"] === "edit";
   const queryPlantillasDesigner = useQuery(designerService.listPlantillasDesigner);
   const [plantillaDesignerActual, setPlantillaDesignerActual] = useState<PlantillaDesigner>();
   const [campoSeleccionadoDesignerId, setCampoSeleccionadoDesignerId] = useState<string>();
@@ -128,6 +130,7 @@ export function FieldsPanel() {
   );
 
   const actualizarElementosDesigner = (elementosActualizadosDesigner: ElementoDesigner[]) => {
+    if (!canEdit) return;
     setMensajeDesigner(undefined);
     setTieneCambiosDesigner(true);
     setPlantillaDesignerActual((plantillaDesigner) =>
@@ -207,6 +210,7 @@ export function FieldsPanel() {
   };
 
   const crearPlantillaDesigner = async () => {
+    if (!canEdit) return;
     setMensajeDesigner(undefined);
     setErrorDesigner(undefined);
     try {
@@ -242,6 +246,7 @@ export function FieldsPanel() {
   };
 
   const guardarFormularioDesigner = async () => {
+    if (!canEdit) return;
     if (!plantillaDesignerActual) return;
 
     setEstaGuardandoDesigner(true);
@@ -275,7 +280,7 @@ export function FieldsPanel() {
           </div>
         }
         action={
-          <Button variant="primary" onClick={crearPlantillaDesigner}>
+          <Button variant="primary" disabled={!canEdit} onClick={crearPlantillaDesigner}>
             Nueva plantilla
           </Button>
         }
@@ -303,16 +308,19 @@ export function FieldsPanel() {
                 </select>
               </div>
 
-              <PaletaDesigner
-                grupoDesigner="basicos"
-                tituloDesigner="Campos basicos"
-                onAgregarDesigner={agregarCampoDesigner}
-              />
-              <PaletaDesigner
-                grupoDesigner="avanzados"
-                tituloDesigner="Avanzados"
-                onAgregarDesigner={agregarCampoDesigner}
-              />
+              <fieldset disabled={!canEdit}>
+                <legend className="sr-only">Agregar campos</legend>
+                <PaletaDesigner
+                  grupoDesigner="basicos"
+                  tituloDesigner="Campos basicos"
+                  onAgregarDesigner={agregarCampoDesigner}
+                />
+                <PaletaDesigner
+                  grupoDesigner="avanzados"
+                  tituloDesigner="Avanzados"
+                  onAgregarDesigner={agregarCampoDesigner}
+                />
+              </fieldset>
             </aside>
 
             <main className="min-h-[680px] p-6">
@@ -358,6 +366,7 @@ export function FieldsPanel() {
                       <button
                         type="button"
                         className="w-full rounded-md border border-dashed border-line-2 px-3 py-2 text-body-sm text-muted hover:border-accent hover:text-accent"
+                        disabled={!canEdit}
                         onClick={() => agregarCampoDesigner("short-text", seccionDesigner.id)}
                       >
                         + Agregar campo
@@ -375,27 +384,30 @@ export function FieldsPanel() {
                 value={vistaPanelDesigner}
                 onValueChange={setVistaPanelDesigner}
               />
-              {vistaPanelDesigner === "asistente" && plantillaDesignerActual ? (
-                <DesignerAssistantPanel
-                  appId={plantillaDesignerActual.id}
-                  elements={elementosDesigner}
-                  hasUnsavedChanges={tieneCambiosDesigner}
-                  onApplyChange={aplicarCambioAsistente}
-                  onFocusField={(campoDesignerId) => {
-                    setCampoSeleccionadoDesignerId(campoDesignerId);
-                    setVistaPanelDesigner("campo");
-                  }}
-                />
-              ) : (
-                <PanelConfiguracionDesigner
-                  campoDesigner={campoSeleccionadoDesigner}
-                  onActualizarDesigner={actualizarCampoDesigner}
-                  onGuardarDesigner={guardarFormularioDesigner}
-                  onDescartarDesigner={recargarPlantillaDesigner}
-                  guardandoDesigner={estaGuardandoDesigner}
-                  tieneCambiosDesigner={tieneCambiosDesigner}
-                />
-              )}
+              <fieldset disabled={!canEdit}>
+                <legend className="sr-only">Configuración del campo</legend>
+                {vistaPanelDesigner === "asistente" && plantillaDesignerActual ? (
+                  <DesignerAssistantPanel
+                    appId={plantillaDesignerActual.id}
+                    elements={elementosDesigner}
+                    hasUnsavedChanges={tieneCambiosDesigner}
+                    onApplyChange={aplicarCambioAsistente}
+                    onFocusField={(campoDesignerId) => {
+                      setCampoSeleccionadoDesignerId(campoDesignerId);
+                      setVistaPanelDesigner("campo");
+                    }}
+                  />
+                ) : (
+                  <PanelConfiguracionDesigner
+                    campoDesigner={campoSeleccionadoDesigner}
+                    onActualizarDesigner={actualizarCampoDesigner}
+                    onGuardarDesigner={guardarFormularioDesigner}
+                    onDescartarDesigner={recargarPlantillaDesigner}
+                    guardandoDesigner={estaGuardandoDesigner}
+                    tieneCambiosDesigner={tieneCambiosDesigner}
+                  />
+                )}
+              </fieldset>
             </aside>
           </div>
         )}

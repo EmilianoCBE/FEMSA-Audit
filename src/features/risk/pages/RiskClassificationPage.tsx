@@ -1,3 +1,4 @@
+import { usePermissions } from "@/features/auth/permissions";
 import { useEffect, useState } from "react";
 import { AlertCircle, BookOpen, Check, Search, ShieldAlert, SlidersHorizontal } from "lucide-react";
 
@@ -21,6 +22,7 @@ const RISK_OPTIONS = [
 const DEPARTMENTS = ["Beverage", "Retail & Spin"];
 
 export function RiskClassificationPage() {
+  const canEdit = usePermissions().permissions.risks === "edit";
   const [probability, setProbability] = useState("3");
   const [impact, setImpact] = useState("3");
 
@@ -129,6 +131,7 @@ export function RiskClassificationPage() {
   }
 
   async function handleSaveEvaluation() {
+    if (!canEdit) return;
     if (!selectedRisk || !result || saving) {
       return;
     }
@@ -478,7 +481,7 @@ export function RiskClassificationPage() {
                       <button
                         type="button"
                         onClick={handleSaveEvaluation}
-                        disabled={saving || loading || !result}
+                        disabled={!canEdit || saving || loading || !result}
                         className="mt-4 w-full rounded-md bg-accent px-4 py-2.5 text-body-sm font-medium text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {saving ? "Guardando evaluación..." : "Guardar evaluación"}

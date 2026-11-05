@@ -4,4 +4,8 @@
  */
 beforeEach(() => {
   cy.intercept("/api/**", { statusCode: 404, body: { msg: "Endpoint no simulado en la prueba" } });
+  cy.intercept("GET", "/api/permissions/me", {
+    permissions: { "app-builder": "edit", risks: "edit", reports: "read" },
+    canManagePermissions: false,
+  });
 });
