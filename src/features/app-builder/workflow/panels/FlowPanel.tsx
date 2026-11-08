@@ -9,7 +9,6 @@ import {
   selectedTransitionMock,
 } from "../data/workflow.mock";
 
-// TODO(US05 - Juan Aguilar): permitir minimizar/expandir el workflow integrado sin salir del Designer.
 export function FlowPanel() {
   const [inspectorView, setInspectorView] = useState<InspectorView>("settings");
 
