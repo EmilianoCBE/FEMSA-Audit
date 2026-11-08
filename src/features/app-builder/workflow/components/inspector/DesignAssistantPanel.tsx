@@ -46,7 +46,7 @@ export function DesignAssistantPanel({
   const pending = suggestions.filter((suggestion) => !decisions[suggestion.id]).length;
 
   return (
-    <div aria-label="Asistente de diseño del flujo">
+    <section aria-label="Asistente de diseño del flujo">
       <InspectorHeader eyebrow="Asistente de diseño" title="Revisión del flujo" />
       <InspectorSection>
         <div
@@ -82,7 +82,7 @@ export function DesignAssistantPanel({
           ))}
         </ul>
       </div>
-    </div>
+    </section>
   );
 }
 
