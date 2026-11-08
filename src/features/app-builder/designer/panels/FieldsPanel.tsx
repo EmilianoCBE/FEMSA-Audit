@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@/shared/hooks/useQuery";
+import { useUnsavedChangesGuard } from "@/shared/hooks/useUnsavedChangesGuard";
 import { Button, ContentArea, QueryState, SectionToolbar, SegmentedControl, type SegmentedOption } from "@/shared/ui";
 import { applyDesignerChange, type DesignerChange, DesignerAssistantPanel, targetFieldId } from "../../assistant";
 import { designerService } from "../services/designerService";
@@ -110,6 +111,8 @@ export function FieldsPanel() {
   const [estaGuardandoDesigner, setEstaGuardandoDesigner] = useState(false);
   const [tieneCambiosDesigner, setTieneCambiosDesigner] = useState(false);
   const [vistaPanelDesigner, setVistaPanelDesigner] = useState<VistaPanelDesigner>("campo");
+  // US11: al salir de Campos con cambios sin guardar se perderían (y "Guardar versión" no los incluiría).
+  const salidaDesigner = useUnsavedChangesGuard(tieneCambiosDesigner);
 
   useEffect(() => {
     if (!plantillaDesignerActual && queryPlantillasDesigner.data?.length) {
@@ -241,8 +244,9 @@ export function FieldsPanel() {
     }
   };
 
+  /** Devuelve true si se guardó. */
   const guardarFormularioDesigner = async () => {
-    if (!plantillaDesignerActual) return;
+    if (!plantillaDesignerActual) return false;
 
     setEstaGuardandoDesigner(true);
     setMensajeDesigner(undefined);
@@ -255,8 +259,10 @@ export function FieldsPanel() {
       setCampoSeleccionadoDesignerId(campoSeleccionadoDesigner?.id);
       setTieneCambiosDesigner(false);
       setMensajeDesigner("Formulario guardado");
+      return true;
     } catch (error) {
       setErrorDesigner(error instanceof Error ? error.message : "No se pudo guardar el formulario.");
+      return false;
     } finally {
       setEstaGuardandoDesigner(false);
     }
@@ -280,6 +286,38 @@ export function FieldsPanel() {
           </Button>
         }
       />
+
+      {salidaDesigner.state === "blocked" && (
+        <div
+          role="alertdialog"
+          aria-label="Cambios sin guardar"
+          className="mb-3 flex flex-wrap items-center gap-2 rounded-md border border-amber-line bg-amber-bg px-3 py-2 text-body-sm text-amber"
+        >
+          <span className="min-w-0 flex-1">
+            Tienes cambios sin guardar en el formulario. Si sales ahora se perderán y no se incluirán al guardar una
+            versión.
+          </span>
+          <div className="flex flex-wrap gap-1.5">
+            <Button size="sm" onClick={() => salidaDesigner.reset()}>
+              Seguir editando
+            </Button>
+            <Button size="sm" onClick={() => salidaDesigner.proceed()}>
+              Salir sin guardar
+            </Button>
+            <Button
+              size="sm"
+              variant="primary"
+              disabled={estaGuardandoDesigner}
+              onClick={async () => {
+                if (await guardarFormularioDesigner()) salidaDesigner.proceed();
+                else salidaDesigner.reset();
+              }}
+            >
+              Guardar y salir
+            </Button>
+          </div>
+        </div>
+      )}
 
       <QueryState query={queryPlantillasDesigner}>
         {(plantillasDesigner) => (
