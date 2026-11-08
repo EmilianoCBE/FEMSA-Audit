@@ -1,3 +1,4 @@
+import { moduleForPath, usePermissions } from "@/features/auth/permissions";
 import femsaLogo from "@/assets/femsa-logo.png";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import type { NavSection } from "../../navigation";
@@ -17,13 +18,10 @@ function Brand() {
 
 export function Sidebar({ sections }: { sections: readonly NavSection[] }) {
   const user = useCurrentUser();
+  const { permissions } = usePermissions();
 
   const visibleSections = sections
     .map((section) => {
-      if (section.label !== "Configuración") {
-        return section;
-      }
-
       return {
         ...section,
         items: section.items.filter((item) => {
@@ -31,7 +29,8 @@ export function Sidebar({ sections }: { sections: readonly NavSection[] }) {
             return user.role === "Administrador";
           }
 
-          return true;
+          const moduleId = item.to ? moduleForPath(item.to) : undefined;
+          return !moduleId || permissions[moduleId] !== "hidden";
         }),
       };
     })
