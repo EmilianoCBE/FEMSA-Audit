@@ -19,6 +19,11 @@ export type TransitionVariant = "default" | "active" | "rejected" | "suggested";
 export type WorkflowTransition = {
   id: string;
   label: string;
+  /** Estado de origen y de destino (id de `WorkflowState`). Las sugeridas pueden apuntar a un `SuggestedState`. */
+  from: string;
+  to: string;
+  /** Rol que puede ejecutarla; `null` si nadie la tiene asignada. */
+  role: string | null;
   /** Trazo SVG ya enrutado dentro del canvas. */
   path: string;
   labelPosition: Point;
@@ -69,21 +74,6 @@ export type TransitionSettings = {
   permissions: readonly { label: string; value: string }[];
   preconditions: readonly ToggleOption[];
   automations: readonly ToggleOption[];
-};
-
-export type SuggestionType = "warning" | "idea";
-
-export type AssistantSuggestion = {
-  id: string;
-  type: SuggestionType;
-  title: string;
-  description: string;
-  confidence: string;
-};
-
-export type AssistantSummary = {
-  inconsistencies: number;
-  suggestedRelations: number;
 };
 
 /* ---------- Tablas ---------- */

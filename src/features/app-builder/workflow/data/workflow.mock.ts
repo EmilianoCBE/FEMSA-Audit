@@ -1,11 +1,4 @@
-import type {
-  AssistantSuggestion,
-  AssistantSummary,
-  NotificationRule,
-  TransitionSettings,
-  WorkflowDiagram,
-  WorkflowRule,
-} from "../types";
+import type { NotificationRule, TransitionSettings, WorkflowDiagram, WorkflowRule } from "../types";
 
 export const findingLifecycleMock: WorkflowDiagram = {
   size: { width: 1010, height: 340 },
@@ -33,6 +26,9 @@ export const findingLifecycleMock: WorkflowDiagram = {
   transitions: [
     {
       id: "send",
+      from: "draft",
+      to: "in-review",
+      role: "Auditor",
       label: "enviar",
       path: "M174 50 L214 50",
       labelPosition: { x: 194, y: 42 },
@@ -41,6 +37,9 @@ export const findingLifecycleMock: WorkflowDiagram = {
     },
     {
       id: "review",
+      from: "in-review",
+      to: "manager-validation",
+      role: "Auditor",
       label: "revisar",
       path: "M374 50 L414 50",
       labelPosition: { x: 394, y: 42 },
@@ -49,6 +48,9 @@ export const findingLifecycleMock: WorkflowDiagram = {
     },
     {
       id: "approve",
+      from: "manager-validation",
+      to: "director-validation",
+      role: "Jefe de Auditoría",
       label: "aprobar",
       path: "M574 50 L614 50",
       labelPosition: { x: 594, y: 42 },
@@ -57,6 +59,9 @@ export const findingLifecycleMock: WorkflowDiagram = {
     },
     {
       id: "close",
+      from: "director-validation",
+      to: "closed",
+      role: null,
       label: "cerrar",
       path: "M774 50 L814 50",
       labelPosition: { x: 794, y: 42 },
@@ -65,6 +70,9 @@ export const findingLifecycleMock: WorkflowDiagram = {
     },
     {
       id: "reject",
+      from: "director-validation",
+      to: "rejected",
+      role: "Dirección de Auditoría",
       label: "rechazar",
       path: "M690 82 L690 168",
       labelPosition: { x: 698, y: 128 },
@@ -72,6 +80,9 @@ export const findingLifecycleMock: WorkflowDiagram = {
     },
     {
       id: "return-to-review",
+      from: "rejected",
+      to: "in-review",
+      role: null,
       label: "devolver a revisión",
       path: "M614 198 L298 198 L298 82",
       labelPosition: { x: 456, y: 192 },
@@ -80,16 +91,17 @@ export const findingLifecycleMock: WorkflowDiagram = {
     },
     {
       id: "suggested-risk",
+      from: "manager-validation",
+      to: "risk-acceptance",
+      role: null,
       label: "sugerida",
       path: "M498 82 L498 168",
       labelPosition: { x: 506, y: 128 },
       variant: "suggested",
     },
   ],
-  warnings: [
-    { id: "no-exit", message: "Sin salida configurada", position: { x: 766, y: 164 } },
-    { id: "no-role", message: "Transición sin rol asignado", position: { x: 766, y: 14 } },
-  ],
+  // Las marcas "!" las calcula el asistente (US16) a partir de las reglas; ver `lib/workflowAssistant.ts`.
+  warnings: [],
   suggestedStates: [
     { id: "risk-acceptance", kind: "Sugerido", name: "Aceptación de riesgo", position: { x: 422, y: 170 } },
   ],
@@ -123,25 +135,6 @@ export const selectedTransitionMock: TransitionSettings = {
     },
   ],
 };
-
-export const assistantSummaryMock: AssistantSummary = { inconsistencies: 3, suggestedRelations: 2 };
-
-export const assistantSuggestionsMock: readonly AssistantSuggestion[] = [
-  {
-    id: "missing-role",
-    type: "warning",
-    title: "Transición sin rol asignado",
-    description: "La transición aprobar no tiene un rol alterno para ausencia del jefe de auditoría.",
-    confidence: "Alta",
-  },
-  {
-    id: "risk-acceptance",
-    type: "idea",
-    title: "Agregar aceptación de riesgo",
-    description: "Detecté casos históricos donde dirección acepta riesgo sin plan de acción.",
-    confidence: "Alta",
-  },
-];
 
 export const workflowRulesMock: WorkflowRule[] = [
   {
