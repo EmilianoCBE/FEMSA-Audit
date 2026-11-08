@@ -3,6 +3,7 @@ import { Badge, type BadgeTone, Button } from "@/shared/ui";
 import type { ElementoDesigner } from "../../designer/types";
 import { describeChange, FIELD_TYPE_NAMES } from "../lib/designerChanges";
 import { assistantService } from "../services/assistantService";
+import { AssistantMetrics } from "./AssistantMetrics";
 import type {
   DesignerAnalysis,
   DesignerChange,
@@ -50,6 +51,8 @@ export function DesignerAssistantPanel({
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState<string>();
   const [notRecorded, setNotRecorded] = useState(false);
+  const [metricsVersion, setMetricsVersion] = useState(0);
+  const refreshMetrics = () => setMetricsVersion((version) => version + 1);
 
   async function analyze() {
     setAnalyzing(true);
@@ -58,6 +61,7 @@ export function DesignerAssistantPanel({
       setAnalysis(await assistantService.analyzeDesigner(appId));
       setDecisions({});
       setNotRecorded(false);
+      refreshMetrics();
     } catch {
       // US18: si el asistente falla, el Designer sigue funcionando de forma manual.
       setError("El asistente no está disponible en este momento. Puedes seguir editando el formulario manualmente.");
@@ -77,7 +81,10 @@ export function DesignerAssistantPanel({
     }
     // Registrar la decisión no bloquea al usuario: el cambio ya quedó aplicado en pantalla.
     if (analysis?.recorded) {
-      assistantService.decide(suggestion.id, decision, change).catch(() => setNotRecorded(true));
+      assistantService
+        .decide(suggestion.id, decision, change)
+        .then(refreshMetrics)
+        .catch(() => setNotRecorded(true));
     }
   }
 
@@ -142,6 +149,8 @@ export function DesignerAssistantPanel({
           </ul>
         </div>
       )}
+
+      <AssistantMetrics appId={appId} refreshKey={metricsVersion} />
     </div>
   );
 }
