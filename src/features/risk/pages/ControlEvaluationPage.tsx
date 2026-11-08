@@ -1,4 +1,3 @@
-
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
@@ -20,6 +19,7 @@ import {
 import { ApiError } from "@/shared/api/httpClient";
 import { ContentArea, Page, PageHeader } from "@/shared/ui";
 import { controlEvaluationService } from "../services/controlEvaluationService";
+import RiskResidualAnalysis from "../components/RiskResidualAnalysis";
 
 import type {
   ControlEvaluationHistory,
@@ -438,6 +438,31 @@ export function ControlEvaluationPage() {
     (control) => control.controlId === selectedControlId,
   );
 
+  // Sincronizar el formulario con la última evaluación del control seleccionado.
+useEffect(() => {
+  if (!selectedControl) {
+    return;
+  }
+
+  const evaluation = selectedControl.latestEvaluation;
+
+  if (evaluation) {
+    setProbability(evaluation.probability);
+    setImpact(evaluation.impact);
+    setDesignRating(evaluation.designRating);
+    setEffectivenessRating(evaluation.effectivenessRating);
+  } else {
+    setProbability("Probable");
+    setImpact("Moderado");
+    setDesignRating("Definido");
+    setEffectivenessRating("Definido");
+  }
+
+  setComments("");
+  setSaveError(null);
+  setSaveMessage(null);
+}, [selectedControl]);
+
   // Opciones de filtros organizacionales.
 
   const categories = Array.from(
@@ -592,7 +617,7 @@ export function ControlEvaluationPage() {
     setCategoryFilter("Todas");
     setInherentLevelFilter("Todos");
     setRiskSort("name-asc");
-    setPageSize(10);
+    setPageSize(5);
     setCurrentPage(1);
   }
 
@@ -600,7 +625,7 @@ export function ControlEvaluationPage() {
     setControlSearch("");
     setControlStatusFilter("Todos");
     setControlSort("id-asc");
-    setControlsPageSize(10);
+    setControlsPageSize(5);
     setControlsCurrentPage(1);
   }
 
@@ -1038,7 +1063,7 @@ export function ControlEvaluationPage() {
                           categoryFilter === "Todas" &&
                           inherentLevelFilter === "Todos" &&
                           riskSort === "name-asc" &&
-                          pageSize === 10
+                          pageSize === 5
                         }
                         className="inline-flex items-center justify-center gap-2 rounded-md border border-line-2 px-3 py-2 text-body-sm font-medium text-ink hover:bg-nav disabled:cursor-not-allowed disabled:opacity-40"
                       >
@@ -1241,6 +1266,8 @@ export function ControlEvaluationPage() {
                     </div>
                   </section>
 
+                  <RiskResidualAnalysis detail={riskDetail} />
+
                   <div className="grid items-start gap-5 desktop:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
                     <section className="min-w-0 rounded-md border border-line bg-surface p-4">
                       <h3 className="text-body font-semibold text-ink">
@@ -1321,7 +1348,7 @@ export function ControlEvaluationPage() {
                               !controlSearch &&
                               controlStatusFilter === "Todos" &&
                               controlSort === "id-asc" &&
-                              controlsPageSize === 10
+                              controlsPageSize === 5
                             }
                             className="inline-flex items-center gap-1 rounded-md border border-line-2 px-2.5 py-1.5 text-caption font-medium text-ink hover:bg-nav disabled:cursor-not-allowed disabled:opacity-40"
                           >
@@ -1539,8 +1566,26 @@ export function ControlEvaluationPage() {
                               className="mt-4 space-y-4"
                             >
                               
-                            <div className="space-y-5">
-                                <div className="rounded-md border border-line p-3 sm:p-4">
+                            <div className="space-y-4">
+
+                                {/* PASO 1: RIESGO INHERENTE */}
+                                <div className="rounded-lg border border-line bg-surface p-4">
+                                    <div className="mb-3 flex items-start gap-3">
+                                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-nav text-body-sm font-semibold text-accent">
+                                        1
+                                    </span>
+
+                                    <div>
+                                        <h4 className="text-body font-semibold text-ink">
+                                        Evaluación del riesgo inherente
+                                        </h4>
+                                        <p className="mt-1 text-body-sm text-muted">
+                                        Determina la probabilidad de ocurrencia y el impacto del riesgo
+                                        antes de considerar la efectividad de los controles.
+                                        </p>
+                                    </div>
+                                    </div>
+
                                     <RiskAssessmentMatrix
                                     probability={probability}
                                     impact={impact}
@@ -1551,24 +1596,69 @@ export function ControlEvaluationPage() {
                                     />
                                 </div>
 
-                                <div className="space-y-4">
+                                {/* PASO 2: DISEÑO */}
+                                <div className="rounded-lg border border-line bg-surface p-4">
+                                    <div className="mb-3 flex items-start gap-3">
+                                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-nav text-body-sm font-semibold text-accent">
+                                        2
+                                    </span>
+
+                                    <div>
+                                        <h4 className="text-body font-semibold text-ink">
+                                        Diseño del control
+                                        </h4>
+                                        <p className="mt-1 text-body-sm text-muted">
+                                        Evalúa qué tan adecuadamente está diseñado el control para
+                                        prevenir o mitigar el riesgo.
+                                        </p>
+                                    </div>
+                                    </div>
+
                                     <RatingOptionGroup
-                                    label="Diseño del control"
+                                    label="Calificación del diseño"
                                     value={designRating}
                                     options={CONTROL_RATINGS}
                                     onChange={setDesignRating}
                                     />
+                                </div>
+
+                                {/* PASO 3: EFECTIVIDAD */}
+                                <div className="rounded-lg border border-line bg-surface p-4">
+                                    <div className="mb-3 flex items-start gap-3">
+                                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-nav text-body-sm font-semibold text-accent">
+                                        3
+                                    </span>
+
+                                    <div>
+                                        <h4 className="text-body font-semibold text-ink">
+                                        Efectividad del control
+                                        </h4>
+                                        <p className="mt-1 text-body-sm text-muted">
+                                        Determina qué tan efectivamente opera el control en la práctica.
+                                        </p>
+                                    </div>
+                                    </div>
 
                                     <RatingOptionGroup
-                                    label="Efectividad del control"
+                                    label="Calificación de efectividad"
                                     value={effectivenessRating}
                                     options={CONTROL_RATINGS}
                                     onChange={setEffectivenessRating}
                                     />
                                 </div>
+
                                 </div>
 
-                              <div>
+                              <div className="rounded-lg border border-line bg-surface p-4">
+                                  <div className="mb-3">
+                                    <h4 className="text-body font-semibold text-ink">
+                                    Comentarios y evidencia
+                                    </h4>
+                                    <p className="mt-1 text-body-sm text-muted">
+                                    Registra observaciones, justificaciones o evidencia relevante
+                                    para respaldar la evaluación.
+                                    </p>
+                                </div>
                                 <label
                                   htmlFor="control-comments"
                                   className="mb-1.5 block text-control font-medium text-ink"
