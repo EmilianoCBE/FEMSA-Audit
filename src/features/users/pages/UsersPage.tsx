@@ -1,3 +1,4 @@
+import { Link } from "react-router";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import {
   Search,
@@ -309,6 +310,9 @@ export default function UsersPage() {
               <h1 className="text-2xl font-bold text-ink sm:text-3xl">Usuarios y roles</h1>
 
               <p className="mt-1 text-sm text-muted">Administra las cuentas, los permisos y los roles de acceso.</p>
+              <Link className="text-sm text-accent underline" to="/app-builder/designer/permissions">
+                Configurar permisos predeterminados por rol
+              </Link>
             </div>
 
             <button
