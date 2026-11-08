@@ -1,3 +1,4 @@
+import { usePermissions } from "@/features/auth/permissions";
 import { useCallback, useRef, useState } from "react";
 import { useQuery } from "@/shared/hooks/useQuery";
 import { Button, ContentArea, EmptyState, QueryState, SectionToolbar } from "@/shared/ui";
@@ -65,6 +66,8 @@ function Notice({ tone, children, onClose }: { tone: "error" | "success"; childr
 
 // US11 - Rafael Valdez: guardar, consultar, comparar, publicar, descartar y restaurar versiones de la aplicación.
 function AppVersionHistory({ appId, plantillas, onSelectApp }: AppVersionHistoryProps) {
+  // US13: el módulo debe estar en "edit" para el rol; US11: el back confirma si además puede versionar.
+  const canEditModule = usePermissions().permissions["app-builder"] === "edit";
   const listVersions = useCallback((signal: AbortSignal) => versionsService.list(appId, signal), [appId]);
   const query = useQuery(listVersions);
   // Las versiones no cambian una vez guardadas: su detalle se pide una sola vez.
@@ -173,7 +176,7 @@ function AppVersionHistory({ appId, plantillas, onSelectApp }: AppVersionHistory
 
   const history = query.data;
   const versions = history?.versions ?? [];
-  const canEdit = history?.canEdit ?? false;
+  const canEdit = canEditModule && (history?.canEdit ?? false);
   const hasUnversionedChanges = history?.designer.hasUnversionedChanges ?? false;
   const nothingToSave = versions.length > 0 && !hasUnversionedChanges;
   const canCompare = versions.length >= 2 || (versions.length === 1 && hasUnversionedChanges);

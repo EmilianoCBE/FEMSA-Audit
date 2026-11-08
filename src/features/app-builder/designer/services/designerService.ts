@@ -1,5 +1,5 @@
 import { httpClient } from "@/shared/api/httpClient";
-import { formFieldsMock, permissionMatrixMock, validationRulesMock } from "../data/designer.mock";
+import { formFieldsMock, validationRulesMock } from "../data/designer.mock";
 import type {
   ElementoDesigner,
   FormField,
@@ -18,11 +18,7 @@ type PlantillaDesignerResponse = {
   layout: PlantillaDesigner;
 };
 
-/**
- * Por ahora devuelve datos mock (los cambios de permisos solo viven en memoria).
- * Cuando existan las tablas en Azure SQL, cada método se cambia por su llamada con httpClient,
- * ej. `listFields: (signal) => httpClient.get<FormField[]>("/designer/fields", signal)`.
- */
+/** Servicios del Designer y configuración de permisos por módulo. */
 export const designerService = {
   listFields: async (_signal?: AbortSignal): Promise<FormField[]> => formFieldsMock,
 
@@ -52,9 +48,11 @@ export const designerService = {
     return response.layout;
   },
 
-  getPermissionMatrix: async (_signal?: AbortSignal): Promise<PermissionMatrixData> => permissionMatrixMock,
+  getPermissionMatrix: (signal?: AbortSignal): Promise<PermissionMatrixData> =>
+    httpClient.get<PermissionMatrixData>("/permissions", signal),
 
-  updatePermission: async (fieldId: string, roleId: RoleId, level: PermissionLevel) => ({ fieldId, roleId, level }),
+  updatePermission: (fieldId: string, roleId: RoleId, level: PermissionLevel) =>
+    httpClient.put(`/permissions/${encodeURIComponent(roleId)}/${encodeURIComponent(fieldId)}`, { level }),
 
   listValidationRules: async (_signal?: AbortSignal): Promise<ValidationRule[]> => validationRulesMock,
 };
