@@ -41,3 +41,14 @@ export type DesignerAnalysis = {
 
 /** Decisión del usuario sobre una sugerencia (US17). */
 export type SuggestionDecision = "accepted" | "rejected" | "replaced";
+
+export type DecisionCounts = { total: number; pending: number; accepted: number; rejected: number; replaced: number };
+
+/** Métricas del asistente para un formulario (`GET /api/ai/designer/metrics`). */
+export type DesignerMetrics = {
+  appId: string;
+  bySource: Record<SuggestionSource, DecisionCounts>;
+  /** Aceptadas + reemplazadas entre las decididas (0–1); `null` si no hay decisiones. */
+  acceptanceRate: Record<SuggestionSource, number | null>;
+  avgAiLatencyMs: number | null;
+};

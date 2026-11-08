@@ -196,4 +196,43 @@ describe("Asistente de diseño del Designer (US15-US17)", () => {
     });
     cy.get("@registro").should("not.have.been.called");
   });
+  it("US17 muestra las métricas de aceptación y las actualiza después de cada decisión", () => {
+    const counts = (accepted: number, pending: number) => ({ total: 3, pending, accepted, rejected: 0, replaced: 0 });
+    const metrics = (accepted: number, pending: number) => ({
+      appId: "layout dummy",
+      bySource: {
+        rules: counts(accepted, pending),
+        ai: { total: 0, pending: 0, accepted: 0, rejected: 0, replaced: 0 },
+      },
+      acceptanceRate: { rules: accepted ? 1 : null, ai: null },
+      avgAiLatencyMs: 2340,
+    });
+    cy.intercept("GET", "/api/ai/designer/metrics?appId=layout%20dummy", metrics(0, 3)).as("metricas");
+    cy.intercept("POST", "/api/ai/designer/analyze", analysis);
+    cy.intercept("POST", "/api/ai/recommendations/*/decision", { recommendation: {} }).as("decision");
+    openAssistant();
+    cy.wait("@metricas");
+    cy.get("[aria-label='Métricas del asistente']").within(() => {
+      cy.contains("Reglas: aceptación").next().should("have.text", "—");
+      cy.contains("Tiempo promedio de la IA: 2.3 s (meta < 10 s)");
+    });
+
+    cy.contains("button", "Analizar formulario").click();
+    cy.intercept("GET", "/api/ai/designer/metrics?appId=layout%20dummy", metrics(1, 2)).as("metricas");
+    card(analysis.suggestions[1].title).within(() => cy.contains("button", "Aceptar").click());
+    cy.wait("@decision");
+    cy.get("[aria-label='Métricas del asistente']").within(() => {
+      cy.contains("Reglas: aceptación").next().should("have.text", "100 %");
+      cy.contains("1 aceptadas · 0 reemplazadas · 0 rechazadas · 2 pendientes");
+    });
+  });
+
+  it("si las métricas no responden, el asistente sigue funcionando", () => {
+    cy.intercept("GET", "/api/ai/designer/metrics*", { statusCode: 503, body: { msg: "Sin tabla" } });
+    cy.intercept("POST", "/api/ai/designer/analyze", analysis);
+    openAssistant();
+    cy.contains("Las métricas del asistente no están disponibles.");
+    cy.contains("button", "Analizar formulario").click();
+    cy.contains("3 sugerencias · 3 pendientes");
+  });
 });

@@ -1,5 +1,5 @@
 import { httpClient } from "@/shared/api/httpClient";
-import type { DesignerAnalysis, DesignerChange, SuggestionDecision } from "../types";
+import type { DesignerAnalysis, DesignerChange, DesignerMetrics, SuggestionDecision } from "../types";
 
 // US15-US17 - Emiliano Carrizales: el backend analiza el formulario guardado y solo devuelve propuestas.
 export const assistantService = {
@@ -11,4 +11,8 @@ export const assistantService = {
       decision,
       ...(decision === "replaced" && { change }),
     }),
+
+  /** US17: cuántas sugerencias se aceptaron, reemplazaron o rechazaron, por origen. */
+  metrics: (appId: string, signal?: AbortSignal) =>
+    httpClient.get<DesignerMetrics>(`/ai/designer/metrics?appId=${encodeURIComponent(appId)}`, signal),
 };
