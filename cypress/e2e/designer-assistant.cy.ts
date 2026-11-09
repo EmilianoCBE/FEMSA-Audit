@@ -58,7 +58,15 @@ describe("Asistente de diseño del Designer (US15-US17)", () => {
     ],
   };
 
-  const card = (title: string) => cy.get(`li[aria-label="${title}"]`);
+  /** Abre la tarjeta (las pendientes se pliegan a una línea) y devuelve el elemento. */
+  const card = (title: string) => {
+    cy.get(`li[aria-label="${title}"] > button[aria-expanded]`).then(($button) => {
+      if ($button.attr("aria-expanded") === "false") cy.wrap($button).click();
+    });
+    return cy.get(`li[aria-label="${title}"]`);
+  };
+  const lastDecision = () => cy.get("[aria-label='Última decisión']");
+  const pendingCards = () => cy.get("[aria-label='Sugerencias pendientes'] > li");
   const openAssistant = () => cy.contains("[role=radio]", "Asistente IA").click();
 
   it("muestra el tipo original antes de aceptar", () => {
@@ -84,20 +92,22 @@ describe("Asistente de diseño del Designer (US15-US17)", () => {
       cy.contains("Por qué: La etiqueta indica");
       cy.contains("Cambio propuesto: Cambiar «Fecha compromiso» a Fecha");
       cy.contains("button", "Aceptar").click();
-      cy.contains("Aceptada");
     });
+    lastDecision().should("contain", "Aceptada: se aplicó al formulario. Revisa y guarda.");
     // La etiqueta de tipo del campo pasa de "Texto" a "Fecha".
     cy.contains("button", "Fecha compromiso").children().last().should("have.text", "Fecha");
 
-    card(analysis.suggestions[2].title).within(() => {
-      cy.contains("button", "Rechazar").click();
-      cy.contains("Rechazada: no se cambió nada.");
-    });
+    card(analysis.suggestions[2].title).within(() => cy.contains("button", "Rechazar").click());
+    lastDecision().should("contain", "Rechazada: no se cambió nada.");
     cy.contains("button", "Fecha de detección").should("not.exist");
 
     // Nada se guardó solo: el usuario decide cuándo guardar.
     cy.get("@guardarLienzo").should("not.have.been.called");
-    cy.contains("3 sugerencias · 1 pendientes");
+    cy.contains("2 de 3 revisadas");
+    cy.contains("1 pendientes");
+    // Las decididas salen de la lista y quedan juntas abajo, plegadas.
+    cy.contains("summary", "Ya decididas (2)").click();
+    cy.get("[aria-label='Sugerencias decididas'] > li").should("have.length", 2).first().should("contain", "Aceptada");
   });
 
   it("US17 reemplazar aplica la versión editada por el usuario e 'Ir al campo' lo selecciona", () => {
@@ -109,8 +119,8 @@ describe("Asistente de diseño del Designer (US15-US17)", () => {
       cy.contains("button", "Reemplazar").click();
       cy.get("input").clear().type("Fecha en que se detectó");
       cy.contains("button", "Aplicar mi versión").click();
-      cy.contains("Reemplazada");
     });
+    lastDecision().should("contain", "Reemplazada");
     cy.contains("button", "Fecha en que se detectó");
 
     openAssistant();
@@ -133,7 +143,7 @@ describe("Asistente de diseño del Designer (US15-US17)", () => {
     cy.contains("La IA tardó demasiado en responder. Se volverá a intentar a partir de las 14:05.");
     cy.contains("Las revisiones automáticas y la edición manual del formulario siguen funcionando.");
     cy.contains("● IA disponible").should("not.exist");
-    cy.contains("2 sugerencias");
+    cy.contains("0 de 2 revisadas");
   });
 
   it("US18 avisa antes de analizar si la IA no está configurada o en pausa", () => {
@@ -189,6 +199,46 @@ describe("Asistente de diseño del Designer (US15-US17)", () => {
     cy.contains("Formulario guardado");
   });
 
+  it("con muchas sugerencias la lista no se alarga: 5 a la vez, una abierta y filtro por origen", () => {
+    const many = Array.from({ length: 9 }, (_, index) => ({
+      id: `s${index + 1}`,
+      source: index < 6 ? "rules" : "ai",
+      kind: index < 6 ? "inconsistency" : "field",
+      title: `Sugerencia número ${index + 1}`,
+      reason: `Motivo de la sugerencia ${index + 1}.`,
+      confidence: "media",
+    }));
+    cy.intercept("POST", "/api/ai/designer/analyze", { ...analysis, suggestions: many });
+    openAssistant();
+    cy.contains("button", "Analizar formulario").click();
+
+    cy.contains("0 de 9 revisadas");
+    pendingCards().should("have.length", 5);
+    // Solo la primera está abierta; las demás muestran el título en una línea.
+    cy.get("button[aria-expanded=true]").should("have.length", 1);
+    cy.contains("Motivo de la sugerencia 1.");
+    cy.contains("Motivo de la sugerencia 2.").should("not.exist");
+    cy.get("li[aria-label='Sugerencia número 2'] > button").click();
+    cy.contains("Motivo de la sugerencia 2.");
+    cy.contains("Motivo de la sugerencia 1.").should("not.exist");
+
+    cy.contains("button", "Mostrar 4 más (quedan 4)").click();
+    pendingCards().should("have.length", 9);
+    cy.contains("button", "Mostrar menos").click();
+    pendingCards().should("have.length", 5);
+
+    // Rechazar una la quita de la lista y entra la siguiente.
+    card("Sugerencia número 1").within(() => cy.contains("button", "Rechazar").click());
+    cy.contains("1 de 9 revisadas");
+    pendingCards().filter("[aria-label='Sugerencia número 1']").should("not.exist");
+    pendingCards().should("have.length", 5);
+
+    cy.contains("button", "IA (3)").click();
+    pendingCards().should("have.length", 3).first().should("contain", "IA");
+    cy.contains("button", "Reglas (5)").click();
+    pendingCards().should("have.length", 5);
+  });
+
   it("pide guardar antes de analizar si hay cambios sin guardar", () => {
     cy.contains("button", "+ Agregar campo").first().click();
     openAssistant();
@@ -239,10 +289,8 @@ describe("Asistente de diseño del Designer (US15-US17)", () => {
     cy.intercept("POST", "/api/ai/recommendations/*/decision", cy.spy().as("registro"));
     openAssistant();
     cy.contains("button", "Analizar formulario").click();
-    card(analysis.suggestions[2].title).within(() => {
-      cy.contains("button", "Rechazar").click();
-      cy.contains("Rechazada");
-    });
+    card(analysis.suggestions[2].title).within(() => cy.contains("button", "Rechazar").click());
+    lastDecision().should("contain", "Rechazada");
     cy.get("@registro").should("not.have.been.called");
   });
   it("US17 muestra las métricas de aceptación y las actualiza después de cada decisión", () => {
@@ -282,6 +330,6 @@ describe("Asistente de diseño del Designer (US15-US17)", () => {
     openAssistant();
     cy.contains("Las métricas del asistente no están disponibles.");
     cy.contains("button", "Analizar formulario").click();
-    cy.contains("3 sugerencias · 3 pendientes");
+    cy.contains("0 de 3 revisadas");
   });
 });
