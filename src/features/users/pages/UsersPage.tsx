@@ -195,11 +195,6 @@ export default function UsersPage() {
     void loadData();
   }, []);
 
-  const activeUsers = useMemo(
-    () => users.filter(isUserActive),
-    [users],
-  );
-
   const activeAdmins = useMemo(
     () =>
       users.filter(

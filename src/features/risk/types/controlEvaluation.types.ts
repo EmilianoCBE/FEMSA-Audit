@@ -47,6 +47,7 @@ export type RiskWithControlsSummary = {
   name: string;
   category: string;
   inherentLevel: string;
+  residualRisk: ResidualRisk | null;
   controls: ({
     controlId: number;
     trackingId: string;

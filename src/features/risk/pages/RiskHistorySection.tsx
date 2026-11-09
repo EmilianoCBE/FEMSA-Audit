@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 import {
   AlertCircle,
   BarChart3,
@@ -69,64 +69,6 @@ function formatMonth(value: string) {
     year: "2-digit",
   });
 }
-
-function BarList({
-  title,
-  icon,
-  items,
-}: {
-  title: string;
-  icon: ReactNode;
-  items: { label: string; count: number }[];
-}) {
-  const maxValue = Math.max(1, ...items.map((item) => item.count));
-
-  return (
-    <section className="min-w-0 rounded-md border border-line bg-surface p-4">
-      <div className="mb-4 flex items-center gap-2">
-        <span className="text-accent">{icon}</span>
-        <h3 className="m-0 text-body font-semibold text-ink">
-          {title}
-        </h3>
-      </div>
-
-      {items.length === 0 ? (
-        <p className="py-5 text-center text-body-sm text-muted">
-          No hay datos para los filtros seleccionados.
-        </p>
-      ) : (
-        <div className="space-y-4">
-          {items.map((item) => (
-            <div key={item.label}>
-              <div className="mb-1.5 flex items-center justify-between gap-3">
-                <span className="break-words text-body-sm text-ink">
-                  {item.label}
-                </span>
-                <span className="shrink-0 text-body-sm font-semibold text-ink">
-                  {item.count}
-                </span>
-              </div>
-
-              <div
-                className="h-2.5 overflow-hidden rounded-full bg-nav"
-                role="img"
-                aria-label={`${item.label}: ${item.count}`}
-              >
-                <div
-                  className="h-full rounded-full bg-accent"
-                  style={{
-                    width: `${(item.count / maxValue) * 100}%`,
-                  }}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </section>
-  );
-}
-
 
 function RiskDonut({
   items,

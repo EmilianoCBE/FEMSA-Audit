@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  Layers3,
   ArrowLeft,
   ClipboardList,
   RefreshCw,
@@ -12,8 +13,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Building2,
-  MapPin,
-  Layers3,
 } from "lucide-react";
 
 import { ApiError } from "@/shared/api/httpClient";
@@ -53,6 +52,87 @@ const CONTROL_RATINGS: ControlRating[] = [
   "Gestionado",
   "Optimizado",
 ];
+
+// Matriz oficial de riesgo inherente.
+// Filas: probabilidad. Columnas: impacto.
+const INHERENT_RISK_MATRIX = [
+  ["Bajo", "Moderado", "Alto", "Crítico", "Crítico"],
+  ["Bajo", "Moderado", "Alto", "Alto", "Crítico"],
+  ["Bajo", "Bajo", "Moderado", "Alto", "Alto"],
+  ["Menor", "Bajo", "Bajo", "Moderado", "Moderado"],
+  ["Menor", "Menor", "Bajo", "Bajo", "Bajo"],
+];
+
+// Matriz oficial de nivel de control.
+// Filas: diseño. Columnas: efectividad.
+const CONTROL_LEVEL_MATRIX = [
+  ["Inicial", "Inicial", "Inicial", "Inicial", "Inicial"],
+  ["Inicial", "Funcional", "Funcional", "Funcional", "Funcional"],
+  ["Inicial", "Funcional", "Definido", "Definido", "Definido"],
+  ["Inicial", "Funcional", "Definido", "Gestionado", "Gestionado"],
+  ["Inicial", "Funcional", "Definido", "Gestionado", "Optimizado"],
+];
+
+// Matriz oficial de vulnerabilidad.
+// Filas: riesgo inherente.
+// Columnas: nivel de control, de mayor a menor.
+const INHERENT_LEVELS = [
+  "Crítico",
+  "Alto",
+  "Moderado",
+  "Bajo",
+  "Menor",
+];
+
+const CONTROL_LEVELS = [
+  "Optimizado",
+  "Gestionado",
+  "Definido",
+  "Funcional",
+  "Inicial",
+];
+
+const VULNERABILITY_MATRIX = [
+  ["Bajo", "Moderado", "Alto", "Crítico", "Crítico"],
+  ["Bajo", "Moderado", "Moderado", "Alto", "Alto"],
+  ["Bajo", "Bajo", "Moderado", "Moderado", "Moderado"],
+  ["Menor", "Menor", "Bajo", "Bajo", "Bajo"],
+  ["Menor", "Menor", "Menor", "Menor", "Menor"],
+];
+
+function getRiskLevelClasses(level: string) {
+  switch (level) {
+    case "Menor":
+      return "border-emerald-200 bg-emerald-100 text-emerald-800";
+    case "Bajo":
+      return "border-lime-200 bg-lime-100 text-lime-800";
+    case "Moderado":
+      return "border-yellow-200 bg-yellow-100 text-yellow-800";
+    case "Alto":
+      return "border-orange-200 bg-orange-100 text-orange-800";
+    case "Crítico":
+      return "border-red-200 bg-red-100 text-red-800";
+    default:
+      return "border-slate-200 bg-slate-100 text-slate-700";
+  }
+}
+
+function getControlLevelClasses(level: string) {
+  switch (level) {
+    case "Inicial":
+      return "border-red-200 bg-red-100 text-red-800";
+    case "Funcional":
+      return "border-orange-200 bg-orange-100 text-orange-800";
+    case "Definido":
+      return "border-yellow-200 bg-yellow-100 text-yellow-800";
+    case "Gestionado":
+      return "border-lime-200 bg-lime-100 text-lime-800";
+    case "Optimizado":
+      return "border-emerald-200 bg-emerald-100 text-emerald-800";
+    default:
+      return "border-slate-200 bg-slate-100 text-slate-700";
+  }
+}
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50];
 
@@ -245,6 +325,7 @@ function CatalogInfo({
   );
 }
 
+
 function RiskAssessmentMatrix({
   probability,
   impact,
@@ -266,10 +347,10 @@ function RiskAssessmentMatrix({
       </div>
 
       <div className="overflow-x-auto">
-        <div className="min-w-[540px]">
-          <div className="grid grid-cols-[150px_repeat(5,minmax(0,1fr))] gap-1.5">
+        <div className="min-w-0">
+          <div className="grid grid-cols-[105px_repeat(5,minmax(0,1fr))] gap-1">
             <div className="flex items-end justify-center pb-2">
-              <span className="text-caption font-medium text-muted">
+              <span className="text-center text-[10px] font-semibold text-muted">
                 Probabilidad ↓
               </span>
             </div>
@@ -277,45 +358,51 @@ function RiskAssessmentMatrix({
             {IMPACTS.map((value) => (
               <div
                 key={value}
-                className="flex min-h-[42px] items-center justify-center rounded-md bg-nav px-1 text-center text-caption font-semibold text-ink"
+                className="flex min-h-[42px] items-center justify-center rounded-md bg-nav px-1 text-center text-[10px] font-semibold text-ink"
               >
                 {value}
               </div>
             ))}
 
-            {PROBABILITIES.map((probabilityValue) => (
-              <div
-                key={probabilityValue}
-                className="contents"
-              >
-                <div className="flex items-center rounded-md bg-nav px-2 text-body-sm font-medium text-ink">
+            {PROBABILITIES.map((probabilityValue, rowIndex) => (
+              <div key={probabilityValue} className="contents">
+                <div className="flex items-center rounded-md bg-nav px-1.5 text-[11px] font-medium text-ink">
                   {probabilityValue}
                 </div>
 
-                {IMPACTS.map((impactValue) => {
+                {IMPACTS.map((impactValue, columnIndex) => {
                   const isSelected =
                     probability === probabilityValue &&
                     impact === impactValue;
+
+                  const level =
+                    INHERENT_RISK_MATRIX[rowIndex][columnIndex];
 
                   return (
                     <button
                       key={`${probabilityValue}-${impactValue}`}
                       type="button"
                       aria-pressed={isSelected}
-                      aria-label={`Probabilidad ${probabilityValue}, impacto ${impactValue}`}
+                      aria-label={`Probabilidad ${probabilityValue}, impacto ${impactValue}, riesgo ${level}`}
                       onClick={() =>
                         onChange(probabilityValue, impactValue)
                       }
-                      className={`flex min-h-[58px] items-center justify-center rounded-md border-2 transition ${
+                      className={`flex min-h-[58px] flex-col items-center justify-center rounded-md border px-0.5 py-1 text-center transition ${
+                        getRiskLevelClasses(level)
+                      } ${
                         isSelected
-                          ? "border-accent bg-accent text-white shadow-sm"
-                          : "border-line bg-surface text-muted hover:border-accent hover:bg-nav hover:text-accent"
+                          ? "border-blue-800 ring-2 ring-blue-700 ring-offset-1 shadow-md"
+                          : "hover:border-slate-500"
                       }`}
                     >
-                      {isSelected ? (
-                        <CheckCircle2 size={22} />
-                      ) : (
-                        <span className="text-lg">+</span>
+                      <span className="text-[10px] font-bold sm:text-xs">
+                        {level}
+                      </span>
+
+                      {isSelected && (
+                        <span className="mt-0.5 text-[9px] font-bold">
+                          <CheckCircle2 size={13} className="inline" /> Seleccionado
+                        </span>
                       )}
                     </button>
                   );
@@ -331,59 +418,234 @@ function RiskAssessmentMatrix({
         <p className="mt-1 text-body-sm font-semibold text-ink">
           Probabilidad: {probability} · Impacto: {impact}
         </p>
+        <div className="mt-2">
+          <span
+            className={`inline-flex rounded-md border px-3 py-1.5 text-xs font-bold ${getRiskLevelClasses(
+              INHERENT_RISK_MATRIX[
+                PROBABILITIES.indexOf(probability)
+              ][IMPACTS.indexOf(impact)],
+            )}`}
+          >
+            Riesgo inherente:{" "}
+            {
+              INHERENT_RISK_MATRIX[
+                PROBABILITIES.indexOf(probability)
+              ][IMPACTS.indexOf(impact)]
+            }
+          </span>
+        </div>
       </div>
     </div>
   );
 }
 
+
 /**
  * Selector visual para las calificaciones del control.
  */
-function RatingOptionGroup({
-  label,
-  value,
-  options,
+function ControlLevelMatrix({
+  designRating,
+  effectivenessRating,
   onChange,
 }: {
-  label: string;
-  value: ControlRating;
-  options: readonly ControlRating[];
-  onChange: (value: ControlRating) => void;
+  designRating: ControlRating;
+  effectivenessRating: ControlRating;
+  onChange: (
+    design: ControlRating,
+    effectiveness: ControlRating,
+  ) => void;
 }) {
   return (
-    <fieldset className="space-y-2">
-      <legend className="text-control font-medium text-ink">
-        {label}
-      </legend>
-
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-        {options.map((option) => {
-          const isSelected = value === option;
-
-          return (
-            <button
-              key={option}
-              type="button"
-              aria-pressed={isSelected}
-              onClick={() => onChange(option)}
-              className={`min-h-[46px] rounded-md border px-3 py-2 text-body-sm font-medium transition ${
-                isSelected
-                  ? "border-accent bg-nav text-accent ring-1 ring-accent"
-                  : "border-line-2 bg-surface text-ink hover:border-accent hover:bg-nav"
-              }`}
-            >
-              {option}
-              {isSelected && (
-                <CheckCircle2
-                  size={15}
-                  className="ml-1 inline-block"
-                />
-              )}
-            </button>
-          );
-        })}
+    <div className="mt-4">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm font-semibold text-slate-700">
+          Selecciona la intersección entre diseño y efectividad
+        </p>
+        <span className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-1 text-sm font-semibold text-blue-800">
+          Nivel:{" "}
+          {CONTROL_LEVEL_MATRIX[
+            CONTROL_RATINGS.indexOf(designRating)
+          ][CONTROL_RATINGS.indexOf(effectivenessRating)]}
+        </span>
       </div>
-    </fieldset>
+
+      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+        <table className="w-full table-fixed border-collapse text-center text-xs">
+          <thead>
+            <tr>
+              <th className="w-[135px] border-b border-r border-slate-200 bg-slate-100 p-2 text-left text-xs font-semibold text-slate-700">
+                Diseño ↓ / Efectividad →
+              </th>
+
+              {CONTROL_RATINGS.map((rating) => (
+                <th
+                  key={rating}
+                  className="border-b border-slate-200 bg-slate-100 p-3 font-semibold text-slate-700"
+                >
+                  {rating}
+                </th>
+              ))}
+            </tr>
+          </thead>
+
+          <tbody>
+            {CONTROL_RATINGS.map((design) => (
+              <tr key={design}>
+                <th className="border-r border-slate-200 bg-slate-50 p-3 text-left font-semibold text-slate-700">
+                  {design}
+                </th>
+
+                {CONTROL_RATINGS.map((effectiveness) => {
+                  const selected =
+                    designRating === design &&
+                    effectivenessRating === effectiveness;
+
+                  const level =
+                    CONTROL_LEVEL_MATRIX[
+                      CONTROL_RATINGS.indexOf(design)
+                    ][CONTROL_RATINGS.indexOf(effectiveness)];
+
+                  return (
+                    <td
+                      key={`${design}-${effectiveness}`}
+                      className="border-t border-slate-100 p-1.5"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => onChange(design, effectiveness)}
+                        aria-pressed={selected}
+                        className={`min-h-12 w-full rounded-md border px-2 py-2 font-semibold transition-all ${
+                            getControlLevelClasses(level)
+                            } ${
+                            selected
+                                ? "border-blue-800 ring-2 ring-blue-700 ring-offset-1 shadow-md"
+                                : "hover:border-slate-500"
+                            }`}
+                      >
+                        {level}
+                        {selected && (
+                          <span className="mt-1 block text-[10px] font-medium">
+                            Seleccionado
+                          </span>
+                        )}
+                      </button>
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <p className="mt-2 text-xs text-slate-500">
+        Las filas representan el diseño del control y las columnas su
+        efectividad. El resultado de la intersección determina el nivel de
+        control.
+      </p>
+    </div>
+  );
+}
+
+function VulnerabilityMatrix({
+  inherentLevel,
+  controlLevel,
+  vulnerability,
+}: {
+  inherentLevel: string;
+  controlLevel: string;
+  vulnerability: string;
+}) {
+  return (
+    <div className="mt-4">
+      <div className="mb-3 flex flex-wrap gap-2">
+        <span className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700">
+          Riesgo inherente:{" "}
+          <strong>{inherentLevel || "—"}</strong>
+        </span>
+
+        <span className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700">
+          Nivel de control:{" "}
+          <strong>{controlLevel || "—"}</strong>
+        </span>
+
+        <span
+          className={`rounded-lg border px-3 py-2 text-xs font-bold ${getRiskLevelClasses(vulnerability)}`}
+        >
+          Vulnerabilidad: {vulnerability || "—"}
+        </span>
+      </div>
+
+      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+        <table className="w-full table-fixed border-collapse text-center text-xs">
+          <thead>
+            <tr>
+              <th className="w-[135px] border-b border-r border-slate-200 bg-slate-100 p-2 text-left text-xs font-semibold text-slate-700">
+                Riesgo inherente ↓ / Control →
+              </th>
+
+              {CONTROL_LEVELS.map((level) => (
+                <th
+                  key={level}
+                  className="border-b border-slate-200 bg-slate-100 p-3 font-semibold text-slate-700"
+                >
+                  {level}
+                </th>
+              ))}
+            </tr>
+          </thead>
+
+          <tbody>
+            {INHERENT_LEVELS.map((inherent) => (
+              <tr key={inherent}>
+                <th className="border-r border-slate-200 bg-slate-50 p-3 text-left font-semibold text-slate-700">
+                  {inherent}
+                </th>
+
+                {CONTROL_LEVELS.map((control) => {
+                  const selected =
+                    inherentLevel === inherent && controlLevel === control;
+
+                  const level =
+                    VULNERABILITY_MATRIX[
+                      INHERENT_LEVELS.indexOf(inherent)
+                    ][CONTROL_LEVELS.indexOf(control)];
+
+                  return (
+                    <td
+                      key={`${inherent}-${control}`}
+                      className="border-t border-slate-100 p-1.5"
+                    >
+                      <div
+                        className={`flex min-h-12 items-center justify-center rounded-md border px-2 py-2 font-semibold ${getRiskLevelClasses(level)} ${
+                            selected
+                                ? "ring-2 ring-blue-700 ring-offset-2"
+                                : "opacity-80"
+                            }`}
+                      >
+                        <span>
+                          {level}
+                          {selected && (
+                            <span className="mt-1 block text-[10px] font-bold">
+                              Resultado
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <p className="mt-2 text-xs text-slate-500">
+        Esta matriz es automática. La celda resaltada corresponde a la
+        combinación obtenida en los pasos anteriores.
+      </p>
+    </div>
   );
 }
 
@@ -395,7 +657,7 @@ export function ControlEvaluationPage() {
   // Filtros, ordenamiento y paginación del catálogo de riesgos.
   const [riskSearch, setRiskSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("Todas");
-  const [inherentLevelFilter, setInherentLevelFilter] = useState("Todos");
+  const [residualLevelFilter, setResidualLevelFilter] = useState("Todos");
   const [riskSort, setRiskSort] = useState("name-asc");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -438,6 +700,22 @@ export function ControlEvaluationPage() {
     (control) => control.controlId === selectedControlId,
   );
 
+  // Resultados calculados en tiempo real con las matrices oficiales.
+const calculatedInherentLevel =
+  INHERENT_RISK_MATRIX[
+    PROBABILITIES.indexOf(probability)
+  ][IMPACTS.indexOf(impact)];
+
+const calculatedControlLevel =
+  CONTROL_LEVEL_MATRIX[
+    CONTROL_RATINGS.indexOf(designRating)
+  ][CONTROL_RATINGS.indexOf(effectivenessRating)];
+
+const calculatedVulnerability =
+  VULNERABILITY_MATRIX[
+    INHERENT_LEVELS.indexOf(calculatedInherentLevel)
+  ][CONTROL_LEVELS.indexOf(calculatedControlLevel)];
+
   // Sincronizar el formulario con la última evaluación del control seleccionado.
 useEffect(() => {
   if (!selectedControl) {
@@ -469,9 +747,13 @@ useEffect(() => {
     new Set(risks.map((risk) => risk.category).filter(Boolean)),
   ).sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
 
-  const inherentLevels = Array.from(
-    new Set(risks.map((risk) => risk.inherentLevel).filter(Boolean)),
-  ).sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
+  const residualLevels = Array.from(
+    new Set(
+        risks
+        .map((risk) => risk.residualRisk?.level)
+        .filter((level): level is string => Boolean(level)),
+    ),
+  ).sort((a, b) => getInherentLevelOrder(a) - getInherentLevelOrder(b));
 
   const filteredRisks = risks
     .filter((risk) => {
@@ -486,8 +768,10 @@ useEffect(() => {
         categoryFilter === "Todas" || risk.category === categoryFilter;
 
       const matchesLevel =
-        inherentLevelFilter === "Todos" ||
-        risk.inherentLevel === inherentLevelFilter;
+        residualLevelFilter === "Todos" ||
+        (residualLevelFilter === "Pendiente de evaluación"
+            ? risk.residualRisk === null
+            : risk.residualRisk?.level === residualLevelFilter);
 
       return matchesSearch && matchesCategory && matchesLevel;
     })
@@ -508,15 +792,20 @@ useEffect(() => {
             sensitivity: "base",
           });
         case "level-asc":
-          return (
-            getInherentLevelOrder(a.inherentLevel) -
-            getInherentLevelOrder(b.inherentLevel)
-          );
-        case "level-desc":
-          return (
-            getInherentLevelOrder(b.inherentLevel) -
-            getInherentLevelOrder(a.inherentLevel)
-          );
+            if (!a.residualRisk) return b.residualRisk ? 1 : 0;
+            if (!b.residualRisk) return -1;
+            return (
+                getInherentLevelOrder(a.residualRisk.level) -
+                getInherentLevelOrder(b.residualRisk.level)
+            );
+
+            case "level-desc":
+            if (!a.residualRisk) return b.residualRisk ? 1 : 0;
+            if (!b.residualRisk) return -1;
+            return (
+                getInherentLevelOrder(b.residualRisk.level) -
+                getInherentLevelOrder(a.residualRisk.level)
+            );
         default:
           return a.name.localeCompare(b.name, "es", {
             sensitivity: "base",
@@ -615,7 +904,7 @@ useEffect(() => {
   function resetRiskFilters() {
     setRiskSearch("");
     setCategoryFilter("Todas");
-    setInherentLevelFilter("Todos");
+    setResidualLevelFilter("Todos");
     setRiskSort("name-asc");
     setPageSize(5);
     setCurrentPage(1);
@@ -861,40 +1150,67 @@ useEffect(() => {
         <div className="space-y-5">
           {!selectedRiskId ? (
             <>
-              <section className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-md border border-line bg-surface p-4">
-                  <div className="flex items-center gap-2 text-body-sm text-muted">
-                    <ClipboardList size={17} />
-                    Riesgos registrados
-                  </div>
-                  <div className="mt-2 text-heading font-semibold text-ink">
-                    {risksLoading ? "…" : risks.length}
-                  </div>
-                  <p className="mt-1 text-body-sm text-muted">
-                    Riesgos disponibles para evaluar sus controles.
-                  </p>
+              <section className="grid gap-4 sm:grid-cols-2">
+                {/* Total de riesgos */}
+                <div className="group relative overflow-hidden rounded-xl border border-line bg-surface p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-md">
+                    <div className="flex items-start justify-between gap-3">
+                    <div>
+                        <p className="text-body-sm font-medium text-muted">
+                        Riesgos registrados
+                        </p>
+
+                        <p className="mt-3 text-4xl font-bold tracking-tight text-ink">
+                        {risksLoading ? "…" : risks.length}
+                        </p>
+
+                        <p className="mt-2 text-body-sm text-muted">
+                        Riesgos disponibles en el catálogo.
+                        </p>
+                    </div>
+
+                    <div className="rounded-xl border border-line bg-nav p-3 text-accent">
+                        <ClipboardList size={25} />
+                    </div>
+                    </div>
+
+                    <div className="mt-5 h-1 overflow-hidden rounded-full bg-nav">
+                    <div className="h-full w-full rounded-full bg-accent" />
+                    </div>
                 </div>
 
-                <div className="rounded-md border border-line bg-surface p-4">
-                  <div className="flex items-center gap-2 text-body-sm text-muted">
-                    <ShieldCheck size={17} />
-                    Controles registrados
-                  </div>
-                  <div className="mt-2 text-heading font-semibold text-ink">
-                    {risksLoading
-                      ? "…"
-                      : risks.reduce(
-                          (total, risk) => total + risk.controls.length,
-                          0,
-                        )}
-                  </div>
-                  <p className="mt-1 text-body-sm text-muted">
-                    Controles relacionados con los riesgos del catálogo.
-                  </p>
-                </div>
-              </section>
+                {/* Total de controles */}
+                <div className="group relative overflow-hidden rounded-xl border border-line bg-surface p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-md">
+                    <div className="flex items-start justify-between gap-3">
+                    <div>
+                        <p className="text-body-sm font-medium text-muted">
+                        Controles registrados
+                        </p>
 
-              <section className="rounded-md border border-line bg-surface p-4">
+                        <p className="mt-3 text-4xl font-bold tracking-tight text-ink">
+                        {risksLoading
+                            ? "…"
+                            : risks.reduce(
+                                (total, risk) => total + risk.controls.length,
+                                0,
+                            )}
+                        </p>
+
+                        <p className="mt-2 text-body-sm text-muted">
+                        Controles relacionados con los riesgos.
+                        </p>
+                    </div>
+
+                    <div className="rounded-xl border border-line bg-nav p-3 text-accent">
+                        <ShieldCheck size={25} />
+                    </div>
+                    </div>
+
+                    <div className="mt-5 h-1 overflow-hidden rounded-full bg-nav">
+                    <div className="h-full w-full rounded-full bg-accent" />
+                    </div>
+                </div>
+                </section>
+                <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div className="mb-4 flex items-start gap-3">
                   <div className="rounded-md border border-line bg-nav p-2 text-accent">
                     <ShieldCheck size={20} />
@@ -984,22 +1300,32 @@ useEffect(() => {
                         >
                           Riesgo inherente
                         </label>
-                        <select
-                          id="risk-level-filter"
-                          value={inherentLevelFilter}
-                          onChange={(event) => {
-                            setInherentLevelFilter(event.target.value);
-                            setCurrentPage(1);
-                          }}
-                          className="w-full rounded-md border border-line-2 bg-surface px-3 py-2 text-body-sm text-ink outline-none focus:border-accent"
-                        >
-                          <option value="Todos">Todos los niveles</option>
-                          {inherentLevels.map((level) => (
-                            <option key={level} value={level}>
-                              {level}
+                        <label
+                            htmlFor="risk-level-filter"
+                            className="mb-1.5 block text-control font-medium text-ink"
+                            >
+                            Riesgo residual
+                            </label>
+
+                            <select
+                            id="risk-level-filter"
+                            value={residualLevelFilter}
+                            onChange={(event) => {
+                                setResidualLevelFilter(event.target.value);
+                                setCurrentPage(1);
+                            }}
+                            className="w-full rounded-md border border-line-2 bg-surface px-3 py-2 text-body-sm text-ink outline-none focus:border-accent"
+                            >
+                            <option value="Todos">Todos los niveles</option>
+                            <option value="Pendiente de evaluación">
+                                Pendiente de evaluación
                             </option>
-                          ))}
-                        </select>
+                            {residualLevels.map((level) => (
+                                <option key={level} value={level}>
+                                {level}
+                                </option>
+                            ))}
+                            </select>
                       </div>
                     </div>
 
@@ -1025,8 +1351,8 @@ useEffect(() => {
                             <option value="name-desc">Nombre (Z-A)</option>
                             <option value="id-asc">ID (ascendente)</option>
                             <option value="id-desc">ID (descendente)</option>
-                            <option value="level-asc">Nivel inherente (A-Z)</option>
-                            <option value="level-desc">Nivel inherente (Z-A)</option>
+                            <option value="level-asc">Nivel residual (A-Z)</option>
+                            <option value="level-desc">Nivel residual (Z-A)</option>
                           </select>
                         </div>
 
@@ -1061,7 +1387,7 @@ useEffect(() => {
                         disabled={
                           !riskSearch &&
                           categoryFilter === "Todas" &&
-                          inherentLevelFilter === "Todos" &&
+                          residualLevelFilter === "Todos" &&
                           riskSort === "name-asc" &&
                           pageSize === 5
                         }
@@ -1104,7 +1430,7 @@ useEffect(() => {
                                 <th className="px-3 py-3 font-medium">Riesgo</th>
                                 <th className="px-3 py-3 font-medium">Categoría</th>
                                 <th className="px-3 py-3 font-medium">
-                                  Riesgo inherente
+                                  Riesgo residual
                                 </th>
                                 <th className="px-3 py-3 text-center font-medium">
                                   Controles
@@ -1130,8 +1456,19 @@ useEffect(() => {
                                     {risk.category}
                                   </td>
                                   <td className="px-3 py-3">
-                                    <LevelBadge level={risk.inherentLevel} />
-                                  </td>
+                                    {risk.residualRisk ? (
+                                        <div className="flex flex-col items-start gap-1">
+                                        <LevelBadge level={risk.residualRisk.level} />
+                                        <span className="text-xs text-muted">
+                                            {risk.residualRisk.evaluatedControls} controles evaluados
+                                        </span>
+                                        </div>
+                                    ) : (
+                                        <span className="text-xs text-muted">
+                                        Pendiente de evaluación
+                                        </span>
+                                    )}
+                                    </td>
                                   <td className="px-3 py-3 text-center text-ink">
                                     {risk.controls.length}
                                   </td>
@@ -1212,67 +1549,121 @@ useEffect(() => {
                 </div>
               ) : riskDetail ? (
                 <>
-                  <section className="rounded-md border border-line bg-surface p-4">
-                    <div className="flex flex-col justify-between gap-4 desktop:flex-row">
-                      <div className="min-w-0">
-                        <p className="text-body-sm font-medium text-muted">
-                          {riskDetail.risk.trackingId} ·{" "}
-                          {riskDetail.risk.category}
-                        </p>
-                        <h2 className="mt-1 text-heading font-semibold text-ink">
-                          {riskDetail.risk.name}
-                        </h2>
-                        <div className="mt-3 flex flex-wrap items-center gap-2">
-                          <span className="text-body-sm text-muted">
-                            Riesgo inherente:
-                          </span>
-                          <LevelBadge
-                            level={riskDetail.risk.inherentLevel}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3 desktop:min-w-[300px]">
-                        <div className="rounded-md border border-line bg-nav p-3">
-                          <p className="text-body-sm text-muted">
-                            Controles evaluados
-                          </p>
-                          <p className="mt-1 text-heading font-semibold text-ink">
-                            {evaluatedControls}/{totalControls}
-                          </p>
-                        </div>
-                        <div className="rounded-md border border-line bg-nav p-3">
-                          <p className="text-body-sm text-muted">
-                            Riesgo residual
-                          </p>
-                          {riskDetail.residualRisk ? (
-                            <div className="mt-1">
-                              <LevelBadge
-                                level={riskDetail.residualRisk.level}
-                              />
-                              <p className="mt-1 text-caption text-muted">
-                                Mediana de{" "}
-                                {riskDetail.residualRisk.evaluatedControls}{" "}
-                                controles
-                              </p>
-                            </div>
-                          ) : (
-                            <p className="mt-1 text-body-sm text-muted">
-                              Sin evaluaciones
+                  <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+                    <div className="border-b border-slate-100 bg-slate-50/80 px-5 py-4">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                            Perfil del riesgo
                             </p>
-                          )}
+                            <p className="mt-1 text-sm font-medium text-slate-600">
+                            {riskDetail.risk.trackingId} · {riskDetail.risk.category}
+                            </p>
                         </div>
-                      </div>
+
+                        <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600">
+                            Evaluación por controles
+                        </span>
+                        </div>
                     </div>
-                  </section>
+
+                    <div className="grid gap-5 p-5 desktop:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.8fr)]">
+                        <div className="min-w-0">
+                        <p className="text-sm font-medium text-slate-500">
+                            Nombre del riesgo
+                        </p>
+
+                        <h2 className="mt-2 text-2xl font-bold leading-tight tracking-tight text-slate-900">
+                            {riskDetail.risk.name}
+                        </h2>
+
+                        <div className="mt-5">
+                            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            Nivel inherente
+                            </p>
+                            <LevelBadge level={riskDetail.risk.inherentLevel} />
+                        </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                            <div className="flex items-center gap-2 text-slate-500">
+                            <ClipboardList size={17} />
+                            <p className="text-xs font-medium">
+                                Controles evaluados
+                            </p>
+                            </div>
+
+                            <p className="mt-3 text-3xl font-bold tracking-tight text-slate-900">
+                            {evaluatedControls}
+                            <span className="text-lg font-medium text-slate-400">
+                                /{totalControls}
+                            </span>
+                            </p>
+
+                            <p className="mt-1 text-xs text-slate-500">
+                            Controles con evaluación
+                            </p>
+
+                            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-200">
+                            <div
+                                className="h-full rounded-full bg-emerald-600 transition-all"
+                                style={{
+                                width: `${
+                                    totalControls > 0
+                                    ? (evaluatedControls / totalControls) * 100
+                                    : 0
+                                }%`,
+                                }}
+                            />
+                            </div>
+                        </div>
+
+                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                            <div className="flex items-center gap-2 text-slate-500">
+                            <ShieldCheck size={17} />
+                            <p className="text-xs font-medium">
+                                Riesgo residual
+                            </p>
+                            </div>
+
+                            {riskDetail.residualRisk ? (
+                            <>
+                                <div className="mt-3">
+                                <LevelBadge level={riskDetail.residualRisk.level} />
+                                </div>
+                                <p className="mt-2 text-xs text-slate-500">
+                                Mediana de{" "}
+                                {riskDetail.residualRisk.evaluatedControls} controles
+                                </p>
+                            </>
+                            ) : (
+                            <p className="mt-3 text-sm font-medium text-slate-500">
+                                Sin evaluaciones
+                            </p>
+                            )}
+                        </div>
+                        </div>
+                    </div>
+                    </section>
 
                   <RiskResidualAnalysis detail={riskDetail} />
 
-                  <div className="grid items-start gap-5 desktop:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-                    <section className="min-w-0 rounded-md border border-line bg-surface p-4">
-                      <h3 className="text-body font-semibold text-ink">
-                        Controles asociados
-                      </h3>
+                  <div className="grid items-start gap-6 desktop:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+                    <section className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                      <div className="flex items-center gap-3">
+                        <div className="rounded-xl bg-slate-100 p-2.5 text-slate-700">
+                            <Layers3 size={21} />
+                        </div>
+                        <div>
+                            <h3 className="text-lg font-bold text-slate-900">
+                            Catálogo de controles
+                            </h3>
+                            <p className="mt-0.5 text-xs text-slate-500">
+                            {filteredControls.length} controles encontrados
+                            </p>
+                        </div>
+                        </div>
                       <p className="mt-1 text-body-sm text-muted">
                         Busca, filtra y selecciona el control que deseas
                         evaluar o consultar.
@@ -1383,11 +1774,11 @@ useEffect(() => {
                                 setSaveMessage(null);
                                 setSaveError(null);
                               }}
-                              className={`w-full rounded-md border p-3 text-left transition ${
+                              className={`w-full rounded-xl border p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm ${
                                 selectedControlId === control.controlId
-                                  ? "border-accent bg-nav"
-                                  : "border-line bg-surface hover:bg-nav"
-                              }`}
+                                    ? "border-blue-500 bg-blue-50 shadow-sm ring-1 ring-blue-200"
+                                    : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
+                                }`}
                             >
                               <div className="flex items-start justify-between gap-2">
                                 <div className="min-w-0">
@@ -1538,24 +1929,29 @@ useEffect(() => {
                             </div>
                           </section>
 
-                          <section className="rounded-md border border-line bg-surface p-4">
-                            <div className="flex items-start justify-between gap-3">
-                              <div>
-                                <h3 className="text-body font-semibold text-ink">
-                                  Evaluación del control
-                                </h3>
-                                <p className="mt-1 text-body-sm text-muted">
-                                  {selectedControl.trackingId} ·{" "}
-                                  {selectedControl.name}
-                                </p>
-                              </div>
-                              <ShieldCheck
-                                size={21}
-                                className="shrink-0 text-accent"
-                              />
-                            </div>
+                            <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+                                <div className="border-b border-slate-100 bg-slate-50/70 p-5">
+                                    <div className="flex items-start gap-3">
+                                    <div className="rounded-xl bg-blue-100 p-3 text-blue-800">
+                                        <ShieldCheck size={23} />
+                                    </div>
 
-                            <p className="mt-3 text-body-sm text-muted">
+                                    <div className="min-w-0">
+                                        <h3 className="text-lg font-bold text-slate-900">
+                                        Evaluación del control
+                                        </h3>
+
+                                        <p className="mt-1 text-sm font-medium text-slate-600">
+                                        {selectedControl.trackingId}
+                                        </p>
+
+                                        <p className="mt-1 text-sm text-slate-500">
+                                        {selectedControl.name}
+                                        </p>
+                                    </div>
+                                    </div>
+                                </div>
+                            <p className="mx-5 mt-3 text-body-sm text-muted">
                               {selectedControl.latestEvaluation
                                 ? "Este control ya cuenta con una evaluación. Puedes registrar una nueva; la anterior se conservará en el historial."
                                 : "Este control todavía no tiene evaluaciones. Completa los campos para registrar la primera."}
@@ -1563,15 +1959,15 @@ useEffect(() => {
 
                             <form
                               onSubmit={handleSaveEvaluation}
-                              className="mt-4 space-y-4"
+                              className="space-y-5 p-5"
                             >
                               
                             <div className="space-y-4">
 
                                 {/* PASO 1: RIESGO INHERENTE */}
-                                <div className="rounded-lg border border-line bg-surface p-4">
+                                <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-5 transition-colors hover:border-slate-300">
                                     <div className="mb-3 flex items-start gap-3">
-                                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-nav text-body-sm font-semibold text-accent">
+                                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-sm font-bold text-blue-800">
                                         1
                                     </span>
 
@@ -1596,55 +1992,59 @@ useEffect(() => {
                                     />
                                 </div>
 
-                                {/* PASO 2: DISEÑO */}
-                                <div className="rounded-lg border border-line bg-surface p-4">
-                                    <div className="mb-3 flex items-start gap-3">
-                                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-nav text-body-sm font-semibold text-accent">
-                                        2
+                                {/* PASO 2: NIVEL DE CONTROL */}
+                                <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-5 transition-colors hover:border-slate-300">
+                                <div className="mb-3 flex items-start gap-3">
+                                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-sm font-bold text-blue-800">
+                                    2
                                     </span>
 
                                     <div>
-                                        <h4 className="text-body font-semibold text-ink">
-                                        Diseño del control
-                                        </h4>
-                                        <p className="mt-1 text-body-sm text-muted">
-                                        Evalúa qué tan adecuadamente está diseñado el control para
-                                        prevenir o mitigar el riesgo.
-                                        </p>
+                                    <h4 className="text-body font-semibold text-ink">
+                                        Evaluación del nivel de control
+                                    </h4>
+                                    <p className="mt-1 text-body-sm text-muted">
+                                        Evalúa conjuntamente el diseño y la efectividad del control.
+                                        Selecciona la combinación correspondiente en la matriz para
+                                        determinar su nivel.
+                                    </p>
                                     </div>
-                                    </div>
-
-                                    <RatingOptionGroup
-                                    label="Calificación del diseño"
-                                    value={designRating}
-                                    options={CONTROL_RATINGS}
-                                    onChange={setDesignRating}
-                                    />
                                 </div>
 
-                                {/* PASO 3: EFECTIVIDAD */}
-                                <div className="rounded-lg border border-line bg-surface p-4">
-                                    <div className="mb-3 flex items-start gap-3">
-                                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-nav text-body-sm font-semibold text-accent">
-                                        3
+                                <ControlLevelMatrix
+                                    designRating={designRating}
+                                    effectivenessRating={effectivenessRating}
+                                    onChange={(newDesign, newEffectiveness) => {
+                                    setDesignRating(newDesign);
+                                    setEffectivenessRating(newEffectiveness);
+                                    }}
+                                />
+                                </div>
+
+                                {/* PASO 3: VULNERABILIDAD */}
+                                <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-5 transition-colors hover:border-slate-300">
+                                <div className="mb-3 flex items-start gap-3">
+                                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-sm font-bold text-blue-800">
+                                    3
                                     </span>
 
                                     <div>
-                                        <h4 className="text-body font-semibold text-ink">
-                                        Efectividad del control
-                                        </h4>
-                                        <p className="mt-1 text-body-sm text-muted">
-                                        Determina qué tan efectivamente opera el control en la práctica.
-                                        </p>
+                                    <h4 className="text-body font-semibold text-ink">
+                                        Determinación de la vulnerabilidad
+                                    </h4>
+                                    <p className="mt-1 text-body-sm text-muted">
+                                        La vulnerabilidad se calcula automáticamente a partir del
+                                        riesgo inherente y el nivel de control obtenidos en los pasos
+                                        anteriores. No requiere una calificación manual.
+                                    </p>
                                     </div>
-                                    </div>
+                                </div>
 
-                                    <RatingOptionGroup
-                                    label="Calificación de efectividad"
-                                    value={effectivenessRating}
-                                    options={CONTROL_RATINGS}
-                                    onChange={setEffectivenessRating}
-                                    />
+                                <VulnerabilityMatrix
+                                    inherentLevel={calculatedInherentLevel}
+                                    controlLevel={calculatedControlLevel}
+                                    vulnerability={calculatedVulnerability}
+                                />
                                 </div>
 
                                 </div>
@@ -1704,7 +2104,7 @@ useEffect(() => {
                               <button
                                 type="submit"
                                 disabled={saving}
-                                className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-accent px-4 py-2.5 text-body-sm font-medium text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
                               >
                                 {saving ? (
                                   <>
@@ -1722,7 +2122,7 @@ useEffect(() => {
                           </section>
 
                           {selectedControl.latestEvaluation && (
-                            <section className="rounded-md border border-line bg-surface p-4">
+                            <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
                               <h3 className="text-body font-semibold text-ink">
                                 Últimos resultados del control
                               </h3>
@@ -1732,7 +2132,7 @@ useEffect(() => {
                               </p>
 
                               <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                                <div className="rounded-md border border-line bg-nav p-3">
+                                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                                   <p className="text-caption text-muted">
                                     Riesgo inherente
                                   </p>
@@ -1775,16 +2175,24 @@ useEffect(() => {
                             </section>
                           )}
 
-                          <section className="rounded-md border border-line bg-surface p-4">
-                            <div className="flex items-center gap-2">
-                              <History size={19} className="text-accent" />
-                              <h3 className="text-body font-semibold text-ink">
-                                Historial de evaluaciones
-                              </h3>
-                            </div>
+                          <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+                            <div className="flex items-center gap-3 border-b border-slate-100 bg-slate-50/70 p-5">
+                                <div className="rounded-xl bg-blue-100 p-2.5 text-blue-800">
+                                    <History size={21} />
+                                </div>
+
+                                <div>
+                                    <h3 className="text-lg font-bold text-slate-900">
+                                    Historial de evaluaciones
+                                    </h3>
+                                    <p className="mt-0.5 text-xs text-slate-500">
+                                    Seguimiento de las evaluaciones anteriores de este control.
+                                    </p>
+                                </div>
+                                </div>
 
                             {historyLoading ? (
-                              <p className="mt-3 text-body-sm text-muted">
+                              <p className="mx-5 mt-3 text-body-sm text-muted">
                                 Cargando historial…
                               </p>
                             ) : historyError ? (
@@ -1793,7 +2201,7 @@ useEffect(() => {
                               </p>
                             ) : history && history.evaluations.length > 0 ? (
                               <div className="mt-4 space-y-3">
-                                <p className="text-body-sm text-muted">
+                                <p className="mx-5 mb-4 mt-3 text-body-sm text-muted">
                                   {history.count}{" "}
                                   {history.count === 1
                                     ? "evaluación registrada"
@@ -1804,7 +2212,7 @@ useEffect(() => {
                                 {history.evaluations.map((evaluation) => (
                                   <article
                                     key={evaluation.evaluationId}
-                                    className="rounded-md border border-line p-3"
+                                    className="rounded-xl border border-slate-200 bg-white p-4 transition-colors hover:bg-slate-50"
                                   >
                                     <div className="flex flex-wrap items-center justify-between gap-2">
                                       <p className="text-body-sm font-semibold text-ink">
@@ -1888,7 +2296,7 @@ useEffect(() => {
                                 ))}
                               </div>
                             ) : (
-                              <p className="mt-3 text-body-sm text-muted">
+                              <p className="mx-5 mb-4 mt-3text-body-sm text-muted">
                                 Este control todavía no tiene evaluaciones
                                 registradas.
                               </p>
