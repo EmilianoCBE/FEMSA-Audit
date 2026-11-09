@@ -16,13 +16,29 @@ import {
 } from "lucide-react";
 
 import { ApiError } from "@/shared/api/httpClient";
-import { formatMonth, getLevelStyle, getRiskLevel, RISK_LEVELS } from "../lib/riskLevels";
 import { riskService } from "../services/riskService";
 import type { RiskEvaluationFilters, RiskEvaluationHistoryItem, RiskEvaluationSummary } from "../services/riskService";
 
 type Props = {
   refreshKey?: number;
 };
+
+const LEVELS = ["Bajo", "Medio", "Alto", "Crítico"];
+
+function levelStyle(level: string) {
+  switch (level) {
+    case "Bajo":
+      return "border-emerald-200 bg-emerald-50 text-emerald-800";
+    case "Medio":
+      return "border-amber-200 bg-amber-50 text-amber-800";
+    case "Alto":
+      return "border-orange-200 bg-orange-50 text-orange-800";
+    case "Crítico":
+      return "border-red-200 bg-red-50 text-red-800";
+    default:
+      return "border-line bg-nav text-ink";
+  }
+}
 
 function formatDate(value: string) {
   const date = new Date(value);
@@ -34,6 +50,19 @@ function formatDate(value: string) {
   return date.toLocaleString("es-MX", {
     dateStyle: "short",
     timeStyle: "short",
+  });
+}
+
+function formatMonth(value: string) {
+  const [year, month] = value.split("-").map(Number);
+
+  if (!year || !month) {
+    return value;
+  }
+
+  return new Date(year, month - 1, 1).toLocaleDateString("es-MX", {
+    month: "short",
+    year: "2-digit",
   });
 }
 
@@ -361,6 +390,13 @@ function LineTrend({ items }: { items: { month: string; count: number }[] }) {
   );
 }
 
+function getRiskLevel(score: number) {
+  if (score <= 4) return "Bajo";
+  if (score <= 9) return "Medio";
+  if (score <= 16) return "Alto";
+  return "Crítico";
+}
+
 function RiskMatrix({ data = [] }: { data?: RiskEvaluationSummary["riskMatrix"] }) {
   const probabilities = [5, 4, 3, 2, 1];
   const impacts = [1, 2, 3, 4, 5];
@@ -412,7 +448,7 @@ function RiskMatrix({ data = [] }: { data?: RiskEvaluationSummary["riskMatrix"] 
                     <td key={impact} className="p-0">
                       <div
                         title={`Probabilidad: ${probability}, impacto: ${impact}, puntaje: ${score}, nivel: ${level}, evaluaciones: ${count}`}
-                        className={`flex min-h-[72px] flex-col items-center justify-center rounded-md border p-1 ${getLevelStyle(level)}`}
+                        className={`flex min-h-[72px] flex-col items-center justify-center rounded-md border p-1 ${levelStyle(level)}`}
                       >
                         <span className="text-base font-bold">{score}</span>
                         <span className="text-[10px] font-medium">{level}</span>
@@ -438,7 +474,7 @@ function RiskMatrix({ data = [] }: { data?: RiskEvaluationSummary["riskMatrix"] 
         ].map((item) => (
           <span
             key={item.label}
-            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${getLevelStyle(item.label)}`}
+            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${levelStyle(item.label)}`}
           >
             {item.label} ({item.range})
           </span>
@@ -790,7 +826,7 @@ export function RiskHistorySection({ refreshKey = 0 }: Props) {
                   className="w-full rounded-[5px] border border-line-2 bg-surface px-3 py-2 text-body-sm text-ink"
                 >
                   <option value="">Todos los niveles</option>
-                  {RISK_LEVELS.map((level) => (
+                  {LEVELS.map((level) => (
                     <option key={level} value={level}>
                       {level}
                     </option>
@@ -931,7 +967,7 @@ export function RiskHistorySection({ refreshKey = 0 }: Props) {
 
                         <td className="px-3 py-3">
                           <span
-                            className={`inline-flex whitespace-nowrap rounded-full border px-2 py-1 text-xs font-medium ${getLevelStyle(item.risk_level)}`}
+                            className={`inline-flex whitespace-nowrap rounded-full border px-2 py-1 text-xs font-medium ${levelStyle(item.risk_level)}`}
                           >
                             {item.risk_level}
                           </span>
@@ -1079,7 +1115,7 @@ export function RiskHistorySection({ refreshKey = 0 }: Props) {
 
                             <td className="px-3 py-3">
                               <span
-                                className={`inline-flex whitespace-nowrap rounded-full border px-2 py-1 text-xs font-medium ${getLevelStyle(item.risk_level)}`}
+                                className={`inline-flex whitespace-nowrap rounded-full border px-2 py-1 text-xs font-medium ${levelStyle(item.risk_level)}`}
                               >
                                 {item.risk_level}
                               </span>
@@ -1166,7 +1202,7 @@ export function RiskHistorySection({ refreshKey = 0 }: Props) {
                           </div>
 
                           <span
-                            className={`mt-3 inline-flex rounded-full border px-2 py-1 text-xs font-medium ${getLevelStyle(item.risk_level)}`}
+                            className={`mt-3 inline-flex rounded-full border px-2 py-1 text-xs font-medium ${levelStyle(item.risk_level)}`}
                           >
                             {item.risk_level}
                           </span>

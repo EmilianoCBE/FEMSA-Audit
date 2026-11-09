@@ -4,7 +4,6 @@ import { AlertCircle, BookOpen, Check, Search, ShieldAlert, SlidersHorizontal } 
 
 import { ApiError } from "@/shared/api/httpClient";
 import { ContentArea, Page, PageHeader } from "@/shared/ui";
-import { getLevelDescription, getLevelStyle } from "../lib/riskLevels";
 import { riskService } from "../services/riskService";
 import { riskLibraryService } from "../services/riskLibraryService";
 import { RiskHistorySection } from "./RiskHistorySection";
@@ -20,6 +19,36 @@ const RISK_OPTIONS = [
 ];
 
 const DEPARTMENTS = ["Beverage", "Retail & Spin"];
+
+function getLevelDescription(level: string) {
+  switch (level) {
+    case "Bajo":
+      return "El riesgo se encuentra dentro de un nivel bajo.";
+    case "Medio":
+      return "El riesgo requiere seguimiento y evaluación.";
+    case "Alto":
+      return "El riesgo requiere atención y acciones de control.";
+    case "Crítico":
+      return "El riesgo requiere atención prioritaria.";
+    default:
+      return "";
+  }
+}
+
+function getLevelStyle(level: string) {
+  switch (level) {
+    case "Bajo":
+      return "border-emerald-200 bg-emerald-50 text-emerald-800";
+    case "Medio":
+      return "border-amber-200 bg-amber-50 text-amber-800";
+    case "Alto":
+      return "border-orange-200 bg-orange-50 text-orange-800";
+    case "Crítico":
+      return "border-red-200 bg-red-50 text-red-800";
+    default:
+      return "border-line bg-nav text-ink";
+  }
+}
 
 export function RiskClassificationPage() {
   const canEdit = usePermissions().permissions.risks === "edit";
