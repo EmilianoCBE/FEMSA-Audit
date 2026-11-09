@@ -906,7 +906,7 @@ useEffect(() => {
     setCategoryFilter("Todas");
     setResidualLevelFilter("Todos");
     setRiskSort("name-asc");
-    setPageSize(5);
+    setPageSize(10);
     setCurrentPage(1);
   }
 
@@ -914,7 +914,7 @@ useEffect(() => {
     setControlSearch("");
     setControlStatusFilter("Todos");
     setControlSort("id-asc");
-    setControlsPageSize(5);
+    setControlsPageSize(10);
     setControlsCurrentPage(1);
   }
 
@@ -1383,7 +1383,7 @@ useEffect(() => {
                           categoryFilter === "Todas" &&
                           residualLevelFilter === "Todos" &&
                           riskSort === "name-asc" &&
-                          pageSize === 5
+                          pageSize === 10
                         }
                         className="inline-flex items-center justify-center gap-2 rounded-md border border-line-2 px-3 py-2 text-body-sm font-medium text-ink hover:bg-nav disabled:cursor-not-allowed disabled:opacity-40"
                       >
@@ -1726,7 +1726,7 @@ useEffect(() => {
                               !controlSearch &&
                               controlStatusFilter === "Todos" &&
                               controlSort === "id-asc" &&
-                              controlsPageSize === 5
+                              controlsPageSize === 10
                             }
                             className="inline-flex items-center gap-1 rounded-md border border-line-2 px-2.5 py-1.5 text-caption font-medium text-ink hover:bg-nav disabled:cursor-not-allowed disabled:opacity-40"
                           >
