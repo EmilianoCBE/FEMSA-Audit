@@ -7,6 +7,8 @@ import {
   type WorkflowRuleId,
   type WorkflowSuggestion,
 } from "../../lib/workflowAssistant";
+import { SuggestionList } from "@/features/app-builder/assistant/components/SuggestionList";
+import { sortByPriority } from "@/features/app-builder/assistant/lib/suggestionList";
 import type { WorkflowDiagram } from "../../types";
 
 // US15-US18 - Emiliano Carrizales: asistente de diseño del workflow. Las revisiones son reglas (US16), cada
@@ -21,6 +23,22 @@ const RULE: Record<WorkflowRuleId, { label: string; tone: BadgeTone }> = {
   "transition-without-role": { label: "Sin rol", tone: "amber" },
   "duplicate-transition": { label: "Duplicada", tone: "amber" },
   "cycle-without-exit": { label: "Ciclo sin salida", tone: "amber" },
+};
+
+/** Primero lo que impide que el flujo termine; al final lo que solo lo hace ambiguo. */
+const RULE_PRIORITY: Record<WorkflowRuleId, number> = {
+  "missing-final-state": 0,
+  "unreachable-state": 1,
+  "dead-end-state": 2,
+  "cycle-without-exit": 3,
+  "transition-without-role": 4,
+  "duplicate-transition": 5,
+};
+
+const DECISION_LABEL: Record<WorkflowDecision, string> = {
+  accepted: "Aceptada",
+  replaced: "Reemplazada",
+  rejected: "Rechazada",
 };
 
 const DECISION_TEXT: Record<WorkflowDecision, string> = {
@@ -44,7 +62,12 @@ export function DesignAssistantPanel({
   onDecide,
   onReanalyze,
 }: DesignAssistantPanelProps) {
-  const pending = suggestions.filter((suggestion) => !decisions[suggestion.id]).length;
+  const [announcement, setAnnouncement] = useState<string>();
+  const sorted = sortByPriority(suggestions, (suggestion) => RULE_PRIORITY[suggestion.rule]);
+  const decide = (suggestion: WorkflowSuggestion, decision: WorkflowDecision, change?: WorkflowChange) => {
+    onDecide(suggestion, decision, change);
+    setAnnouncement(`${DECISION_TEXT[decision]} — ${suggestion.title}`);
+  };
 
   return (
     <section aria-label="Asistente de diseño del flujo">
@@ -61,60 +84,63 @@ export function DesignAssistantPanel({
           Revisa estados inalcanzables, estados sin salida, ciclos sin salida, transiciones sin rol y duplicadas. Nada
           se aplica sin tu aprobación.
         </p>
-        <Button className="mt-2.5 w-full" size="sm" onClick={onReanalyze}>
+        <Button
+          className="mt-2.5 w-full"
+          size="sm"
+          onClick={() => {
+            setAnnouncement(undefined);
+            onReanalyze();
+          }}
+        >
           Volver a analizar
         </Button>
       </InspectorSection>
       <div className="px-4 py-3.5">
-        <p className="mb-2.5 text-label text-muted">
-          {suggestions.length === 0
-            ? "No se encontraron inconsistencias en este flujo."
-            : `${suggestions.length} sugerencias · ${pending} pendientes`}
-        </p>
-        <ul className="space-y-2.5">
-          {suggestions.map((suggestion) => (
-            <SuggestionItem
-              key={suggestion.id}
+        <SuggestionList
+          key={suggestions.map((suggestion) => suggestion.id).join()}
+          items={sorted}
+          decisions={decisions}
+          announcement={announcement}
+          emptyText="No se encontraron inconsistencias en este flujo."
+          getTitle={(suggestion) => suggestion.title}
+          decisionLabel={(decision) => DECISION_LABEL[decision as WorkflowDecision]}
+          renderBadges={(suggestion) => (
+            <>
+              <Badge tone={RULE[suggestion.rule].tone} size="sm">
+                {RULE[suggestion.rule].label}
+              </Badge>
+              <Badge size="sm">Regla</Badge>
+            </>
+          )}
+          renderDetails={(suggestion) => (
+            <SuggestionDetails
               diagram={diagram}
               suggestion={suggestion}
-              decision={decisions[suggestion.id]}
-              onDecide={(decision, change) => onDecide(suggestion, decision, change)}
+              onDecide={(decision, change) => decide(suggestion, decision, change)}
             />
-          ))}
-        </ul>
+          )}
+        />
       </div>
     </section>
   );
 }
 
-function SuggestionItem({
+/** Lo que se ve al abrir una tarjeta: por qué, el cambio propuesto y las acciones (US17). */
+function SuggestionDetails({
   diagram,
   suggestion,
-  decision,
   onDecide,
 }: {
   diagram: WorkflowDiagram;
   suggestion: WorkflowSuggestion;
-  decision?: WorkflowDecision;
   onDecide: (decision: WorkflowDecision, change?: WorkflowChange) => void;
 }) {
   const [draft, setDraft] = useState<WorkflowChange>();
-  const rule = RULE[suggestion.rule];
   const editable = suggestion.change && suggestion.change.op !== "remove-transition";
 
   return (
-    <li
-      aria-label={suggestion.title}
-      className={`rounded-md border border-line bg-surface px-[11px] py-2.5 ${decision ? "opacity-70" : ""}`}
-    >
-      <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
-        <Badge tone={rule.tone} size="sm">
-          {rule.label}
-        </Badge>
-        <Badge size="sm">Regla</Badge>
-      </div>
-      <h3 className="text-body-sm/[1.35] font-medium">{suggestion.title}</h3>
-      <p className="mt-1 text-meta/[1.45] text-ink-2">
+    <>
+      <p className="text-meta/[1.45] text-ink-2">
         <span className="font-medium">Por qué: </span>
         {suggestion.reason}
       </p>
@@ -124,11 +150,7 @@ function SuggestionItem({
         </p>
       )}
 
-      {decision ? (
-        <p role="status" className="mt-2 text-label font-medium text-muted">
-          {DECISION_TEXT[decision]}
-        </p>
-      ) : draft ? (
+      {draft ? (
         <ChangeEditor
           diagram={diagram}
           change={draft}
@@ -153,7 +175,7 @@ function SuggestionItem({
           </Button>
         </div>
       )}
-    </li>
+    </>
   );
 }
 

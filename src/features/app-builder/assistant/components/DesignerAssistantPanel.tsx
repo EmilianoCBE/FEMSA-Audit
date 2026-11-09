@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@/shared/hooks/useQuery";
-import { Badge, type BadgeTone, Button } from "@/shared/ui";
+import { Badge, type BadgeTone, Button, FilterChip } from "@/shared/ui";
 import type { ElementoDesigner } from "../../designer/types";
 import {
   ANALYZE_TIMEOUT_MS,
@@ -9,8 +9,10 @@ import {
   MANUAL_STILL_WORKS,
 } from "../lib/aiAvailability";
 import { describeChange, FIELD_TYPE_NAMES } from "../lib/designerChanges";
+import { sortByPriority } from "../lib/suggestionList";
 import { assistantService } from "../services/assistantService";
 import { AssistantMetrics } from "./AssistantMetrics";
+import { SuggestionList } from "./SuggestionList";
 import type {
   DesignerAnalysis,
   DesignerChange,
@@ -28,6 +30,20 @@ const KIND: Record<SuggestionKind, { label: string; tone: BadgeTone }> = {
   inconsistency: { label: "Inconsistencia", tone: "amber" },
   component: { label: "Componente", tone: "blue" },
   field: { label: "Campo sugerido", tone: "green" },
+};
+
+/** Primero lo que está mal, luego cambios de componente y al final campos nuevos; dentro, la más confiable. */
+const KIND_PRIORITY: Record<SuggestionKind, number> = { inconsistency: 0, component: 1, field: 2 };
+const CONFIDENCE_PRIORITY = { alta: 0, media: 1, baja: 2 } as const;
+const priority = (suggestion: DesignerSuggestion) =>
+  KIND_PRIORITY[suggestion.kind] * 10 + CONFIDENCE_PRIORITY[suggestion.confidence];
+
+type SourceFilter = "all" | "rules" | "ai";
+
+const DECISION_LABEL: Record<SuggestionDecision, string> = {
+  accepted: "Aceptada",
+  replaced: "Reemplazada",
+  rejected: "Rechazada",
 };
 
 const DECISION_TEXT: Record<SuggestionDecision, string> = {
@@ -60,6 +76,8 @@ export function DesignerAssistantPanel({
   const [error, setError] = useState<string>();
   const [notRecorded, setNotRecorded] = useState(false);
   const [metricsVersion, setMetricsVersion] = useState(0);
+  const [announcement, setAnnouncement] = useState<string>();
+  const [source, setSource] = useState<SourceFilter>("all");
   const refreshMetrics = () => setMetricsVersion((version) => version + 1);
 
   async function analyze() {
@@ -68,6 +86,8 @@ export function DesignerAssistantPanel({
     try {
       setAnalysis(await assistantService.analyzeDesigner(appId, AbortSignal.timeout(ANALYZE_TIMEOUT_MS)));
       setDecisions({});
+      setAnnouncement(undefined);
+      setSource("all");
       setNotRecorded(false);
       refreshMetrics();
     } catch (reason) {
@@ -83,6 +103,7 @@ export function DesignerAssistantPanel({
     try {
       if (change) onApplyChange(change);
       setDecisions((current) => ({ ...current, [suggestion.id]: decision }));
+      setAnnouncement(`${DECISION_TEXT[decision]} — ${suggestion.title}`);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "No se pudo aplicar la sugerencia.");
       return;
@@ -96,7 +117,11 @@ export function DesignerAssistantPanel({
     }
   }
 
-  const pending = analysis?.suggestions.filter((suggestion) => !decisions[suggestion.id]).length ?? 0;
+  const suggestions = sortByPriority(analysis?.suggestions ?? [], priority);
+  const pendingBySource = (wanted: SourceFilter) =>
+    suggestions.filter((s) => !decisions[s.id] && (wanted === "all" || s.source === wanted)).length;
+  const hasBothSources = suggestions.some((s) => s.source === "ai") && suggestions.some((s) => s.source === "rules");
+  const shown = hasBothSources && source !== "all" ? suggestions.filter((s) => s.source === source) : suggestions;
 
   return (
     <div aria-label="Asistente de diseño">
@@ -138,25 +163,54 @@ export function DesignerAssistantPanel({
               {aiUnavailableMessage(analysis.aiUnavailableReason, analysis.aiRetryAt)}
             </div>
           )}
-          <p className="mb-3 text-label text-muted">
-            {analysis.suggestions.length === 0
-              ? "No se encontraron mejoras para este formulario."
-              : `${analysis.suggestions.length} sugerencias · ${pending} pendientes`}
-          </p>
-          <ul className="space-y-3">
-            {analysis.suggestions.map((suggestion) => (
-              <SuggestionItem
-                key={suggestion.id}
+          {hasBothSources && (
+            <fieldset className="mb-2.5 flex flex-wrap gap-1.5">
+              <legend className="sr-only">Mostrar sugerencias de</legend>
+              {(
+                [
+                  ["all", "Todas"],
+                  ["rules", "Reglas"],
+                  ["ai", "IA"],
+                ] as const
+              ).map(([value, label]) => (
+                <FilterChip
+                  key={value}
+                  selected={source === value}
+                  className="px-2 py-1 text-label"
+                  onClick={() => setSource(value)}
+                >
+                  {label} ({pendingBySource(value)})
+                </FilterChip>
+              ))}
+            </fieldset>
+          )}
+          <SuggestionList
+            key={`${suggestions.map((s) => s.id).join()}-${source}`}
+            items={shown}
+            decisions={decisions}
+            announcement={announcement}
+            emptyText="No se encontraron mejoras para este formulario."
+            getTitle={(suggestion) => suggestion.title}
+            decisionLabel={(decision) => DECISION_LABEL[decision as SuggestionDecision]}
+            renderBadges={(suggestion) => (
+              <>
+                <Badge tone={KIND[suggestion.kind].tone} size="sm">
+                  {KIND[suggestion.kind].label}
+                </Badge>
+                <Badge size="sm">{suggestion.source === "ai" ? "IA" : "Regla"}</Badge>
+              </>
+            )}
+            renderDetails={(suggestion) => (
+              <SuggestionDetails
                 suggestion={suggestion}
                 elements={elements}
-                decision={decisions[suggestion.id]}
                 onAccept={() => decide(suggestion, "accepted", suggestion.change)}
                 onReplace={(change) => decide(suggestion, "replaced", change)}
                 onReject={() => decide(suggestion, "rejected")}
                 onFocusField={onFocusField}
               />
-            ))}
-          </ul>
+            )}
+          />
         </div>
       )}
 
@@ -206,10 +260,10 @@ function AiStatusNotice() {
   );
 }
 
-function SuggestionItem({
+/** Lo que se ve al abrir una tarjeta: por qué, el cambio propuesto y las acciones (US17). */
+function SuggestionDetails({
   suggestion,
   elements,
-  decision,
   onAccept,
   onReplace,
   onReject,
@@ -217,43 +271,27 @@ function SuggestionItem({
 }: {
   suggestion: DesignerSuggestion;
   elements: readonly ElementoDesigner[];
-  decision?: SuggestionDecision;
   onAccept: () => void;
   onReplace: (change: DesignerChange) => void;
   onReject: () => void;
   onFocusField: (fieldId: string) => void;
 }) {
   const [draft, setDraft] = useState<DesignerChange>();
-  const kind = KIND[suggestion.kind];
 
   return (
-    <li
-      aria-label={suggestion.title}
-      className={`rounded-md border border-line bg-surface p-3 ${decision ? "opacity-70" : ""}`}
-    >
-      <div className="mb-2 flex flex-wrap items-center gap-1.5">
-        <Badge tone={kind.tone} size="sm">
-          {kind.label}
-        </Badge>
-        <Badge size="sm">{suggestion.source === "ai" ? "IA" : "Regla"}</Badge>
-        <span className="text-label text-muted">Confianza {suggestion.confidence}</span>
-      </div>
-      <h3 className="text-body-sm font-semibold text-ink">{suggestion.title}</h3>
-      <p className="mt-1 text-body-sm text-ink-2">
+    <>
+      <p className="text-body-sm text-ink-2">
         <span className="font-medium">Por qué: </span>
         {suggestion.reason}
       </p>
+      <p className="mt-1 text-label text-muted">Confianza {suggestion.confidence}</p>
       {suggestion.change && (
         <p className="mt-2 rounded border border-line-2 bg-nav px-2 py-1.5 text-label text-ink-2">
           Cambio propuesto: {describeChange(suggestion.change, elements)}
         </p>
       )}
 
-      {decision ? (
-        <p role="status" className="mt-2 text-label font-medium text-muted">
-          {DECISION_TEXT[decision]}
-        </p>
-      ) : draft ? (
+      {draft ? (
         <ChangeEditor
           change={draft}
           onChange={setDraft}
@@ -261,8 +299,8 @@ function SuggestionItem({
           onApply={() => onReplace(draft)}
         />
       ) : (
-        <div className="mt-3 flex flex-wrap gap-2">
-          {suggestion.change ? (
+        <div className="mt-2.5 flex flex-wrap gap-2">
+          {suggestion.change && (
             <>
               <Button size="sm" variant="primary" onClick={onAccept}>
                 Aceptar
@@ -271,19 +309,18 @@ function SuggestionItem({
                 Reemplazar
               </Button>
             </>
-          ) : (
-            suggestion.fieldId && (
-              <Button size="sm" onClick={() => onFocusField(suggestion.fieldId as string)}>
-                Ir al campo
-              </Button>
-            )
+          )}
+          {suggestion.fieldId && !suggestion.change && (
+            <Button size="sm" onClick={() => onFocusField(suggestion.fieldId as string)}>
+              Ir al campo
+            </Button>
           )}
           <Button size="sm" onClick={onReject}>
             Rechazar
           </Button>
         </div>
       )}
-    </li>
+    </>
   );
 }
 
