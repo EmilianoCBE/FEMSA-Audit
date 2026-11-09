@@ -21,13 +21,63 @@ import {
 
 import { ApiError } from "@/shared/api/httpClient";
 import { ContentArea, Page } from "@/shared/ui";
-import { getEmailPreview, getInitials, isUserActive, validateNewUser } from "../lib/users";
 import { usersService } from "../services/usersService";
 import type { Role, User } from "../types";
 
 const PAGE_SIZE = 10;
 
 type QuickFilter = "all" | "active-admins";
+
+function normalizeNamePart(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+}
+
+function getEmailBase(firstName: string, lastName: string): string {
+  const firstPart = normalizeNamePart(firstName.trim().split(/\s+/)[0] ?? "");
+  const lastPart = normalizeNamePart(lastName.trim().split(/\s+/)[0] ?? "");
+
+  if (!firstPart || !lastPart) {
+    return "";
+  }
+
+  return `${firstPart}.${lastPart}@femsa.com`;
+}
+
+function getEmailPreview(firstName: string, lastName: string, users: User[]): string {
+  const baseEmail = getEmailBase(firstName, lastName);
+
+  if (!baseEmail) {
+    return "";
+  }
+
+  const existingEmails = new Set(
+    users.map((user) =>
+      String(user.email ?? "")
+        .trim()
+        .toLowerCase(),
+    ),
+  );
+
+  if (!existingEmails.has(baseEmail.toLowerCase())) {
+    return baseEmail;
+  }
+
+  const atIndex = baseEmail.lastIndexOf("@");
+  const namePart = baseEmail.substring(0, atIndex);
+  const domainPart = baseEmail.substring(atIndex);
+
+  let suffix = 2;
+
+  while (existingEmails.has(`${namePart}${suffix}${domainPart}`.toLowerCase())) {
+    suffix++;
+  }
+
+  return `${namePart}${suffix}${domainPart}`;
+}
 
 function getRoleBadgeClass(roleName: unknown): string {
   const role = typeof roleName === "string" ? roleName : String(roleName ?? "");
@@ -68,6 +118,15 @@ function getRoleBadgeClass(roleName: unknown): string {
   return "bg-indigo-100 text-indigo-800 ring-1 ring-indigo-200";
 }
 
+function getInitials(fullName: string): string {
+  return fullName
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join("");
+}
+
 function getErrorMessage(error: unknown): string {
   if (error instanceof ApiError) {
     return error.message;
@@ -78,6 +137,10 @@ function getErrorMessage(error: unknown): string {
   }
 
   return "Ocurrió un error inesperado. Intenta nuevamente.";
+}
+
+function isUserActive(user: User): boolean {
+  return user.is_active === true || Number(user.is_active) === 1;
 }
 
 export default function UsersPage() {
@@ -248,10 +311,28 @@ export default function UsersPage() {
     setErrorMessage("");
     setSuccessMessage("");
 
-    const validationError = validateNewUser({ firstName, lastName, roleId: newRoleId, password, confirmPassword });
+    if (!firstName.trim() || !lastName.trim()) {
+      setErrorMessage("Escribe el nombre y el apellido del usuario.");
+      return;
+    }
 
-    if (validationError) {
-      setErrorMessage(validationError);
+    if (!newRoleId) {
+      setErrorMessage("Selecciona el rol que tendrá el usuario.");
+      return;
+    }
+
+    if (password.length < 9) {
+      setErrorMessage("La contraseña debe tener al menos 9 caracteres.");
+      return;
+    }
+
+    if (password.length > 1024) {
+      setErrorMessage("La contraseña supera la longitud permitida.");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setErrorMessage("Las contraseñas no coinciden.");
       return;
     }
 
