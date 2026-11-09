@@ -7,6 +7,7 @@ import {
   Inbox,
   LayoutGrid,
   Library,
+  ShieldCheck,
   UserCircle,
   type LucideIcon,
 } from "lucide-react";
@@ -64,6 +65,11 @@ export const NAVIGATION: readonly NavSection[] = [
       {
         label: "Evidencias",
         icon: FileText,
+      },
+      {
+        label: "Evaluación por controles",
+        icon: ShieldCheck,
+        to: "/riesgos/evaluacion-controles",
       },
     ],
   },
