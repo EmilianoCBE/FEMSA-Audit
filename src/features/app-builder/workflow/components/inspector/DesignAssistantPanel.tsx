@@ -20,6 +20,7 @@ const RULE: Record<WorkflowRuleId, { label: string; tone: BadgeTone }> = {
   "missing-final-state": { label: "Sin estado final", tone: "amber" },
   "transition-without-role": { label: "Sin rol", tone: "amber" },
   "duplicate-transition": { label: "Duplicada", tone: "amber" },
+  "cycle-without-exit": { label: "Ciclo sin salida", tone: "amber" },
 };
 
 const DECISION_TEXT: Record<WorkflowDecision, string> = {
@@ -57,8 +58,8 @@ export function DesignAssistantPanel({
           forma manual.
         </div>
         <p className="mt-2 text-meta/[1.45] text-muted">
-          Revisa estados inalcanzables, estados sin salida, transiciones sin rol y duplicadas. Nada se aplica sin tu
-          aprobación.
+          Revisa estados inalcanzables, estados sin salida, ciclos sin salida, transiciones sin rol y duplicadas. Nada
+          se aplica sin tu aprobación.
         </p>
         <Button className="mt-2.5 w-full" size="sm" onClick={onReanalyze}>
           Volver a analizar

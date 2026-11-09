@@ -102,6 +102,53 @@ describe("US16 reglas del workflow", () => {
     ]);
   });
 
+  it("detecta un ciclo sin salida y propone cerrarlo hacia el estado final", () => {
+    const d = diagram(
+      [
+        state("a", "Inicial", 0),
+        state("b", "En proceso", 200),
+        state("r", "Retorno", 200, 170),
+        state("c", "Final", 400),
+      ],
+      [transition("ab", "a", "b"), transition("br", "b", "r"), transition("rb", "r", "b")],
+    );
+    const cycles = analyzeWorkflow(d).filter((item) => item.rule === "cycle-without-exit");
+    expect(cycles).toHaveLength(1);
+    expect(cycles[0].title).toBe("Ciclo sin salida entre «b», «r»");
+    expect(cycles[0].reason).toMatch(/nunca podría cerrarse/);
+    expect(cycles[0].target).toEqual({ type: "state", id: "b" });
+    expect(cycles[0].change).toEqual({
+      op: "add-transition",
+      from: "r",
+      to: "c",
+      label: "cerrar",
+      role: "Dirección de Auditoría",
+    });
+    // Al aceptar el cambio el ciclo ya tiene salida.
+    const fixed = applyWorkflowChange(d, cycles[0].change as NonNullable<(typeof cycles)[0]["change"]>);
+    expect(rules(fixed)).not.toContain("cycle-without-exit:b");
+  });
+
+  it("un ciclo con salida a un estado final no es inconsistencia", () => {
+    const d = base();
+    const withLoop = { ...d, transitions: [...d.transitions, transition("ba", "b", "a")] };
+    expect(analyzeWorkflow(withLoop)).toEqual([]);
+  });
+
+  it("no repite el ciclo si desemboca en un estado sin salida (esa regla ya lo arregla)", () => {
+    const d = diagram(
+      [
+        state("a", "Inicial", 0),
+        state("b", "En proceso", 200),
+        state("x", "En proceso", 200, 170),
+        state("c", "Final", 400),
+      ],
+      [transition("ab", "a", "b"), transition("ba", "b", "a"), transition("bx", "b", "x")],
+    );
+    expect(rules(d)).toContain("dead-end-state:x");
+    expect(rules(d).some((id) => id.startsWith("cycle-without-exit"))).toBe(false);
+  });
+
   it("las transiciones sugeridas no cuentan hasta aceptarlas", () => {
     const d = base();
     const result = rules({
