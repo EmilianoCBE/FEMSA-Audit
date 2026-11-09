@@ -23,7 +23,8 @@ export type WorkflowRuleId =
   | "dead-end-state"
   | "missing-final-state"
   | "transition-without-role"
-  | "duplicate-transition";
+  | "duplicate-transition"
+  | "cycle-without-exit";
 
 export type WorkflowSuggestion = {
   id: string;
@@ -119,6 +120,8 @@ export function analyzeWorkflow(diagram: WorkflowDiagram): WorkflowSuggestion[] 
     }
   }
 
+  suggestions.push(...cycleWithoutExit(diagram, transitions, finals));
+
   const seen = new Map<string, WorkflowTransition>();
   for (const transition of transitions) {
     const key = `${transition.from}→${transition.to}→${transition.label.trim().toLowerCase()}`;
@@ -152,6 +155,72 @@ export function analyzeWorkflow(diagram: WorkflowDiagram): WorkflowSuggestion[] 
     }
   }
 
+  return suggestions;
+}
+
+/** Estados a los que se llega siguiendo transiciones desde `start` (sin incluirlo, salvo que haya un ciclo). */
+function reachableFrom(start: string, transitions: readonly WorkflowTransition[]): Set<string> {
+  const seen = new Set<string>();
+  const pending = [start];
+  while (pending.length > 0) {
+    const current = pending.pop() as string;
+    for (const transition of transitions) {
+      if (transition.from === current && !seen.has(transition.to)) {
+        seen.add(transition.to);
+        pending.push(transition.to);
+      }
+    }
+  }
+  return seen;
+}
+
+/**
+ * Ciclo sin salida: estados que se mandan el hallazgo entre sí y desde ninguno se llega a un estado final.
+ * Si el ciclo desemboca en un estado sin salida, esa regla ya propone el arreglo y aquí no se repite.
+ */
+function cycleWithoutExit(
+  diagram: WorkflowDiagram,
+  transitions: readonly WorkflowTransition[],
+  finals: readonly WorkflowState[],
+): WorkflowSuggestion[] {
+  if (finals.length === 0) return [];
+  const reach = new Map(diagram.states.map((state) => [state.id, reachableFrom(state.id, transitions)]));
+  const deadEnds = new Set(
+    diagram.states
+      .filter((state) => !isFinal(state) && !transitions.some((transition) => transition.from === state.id))
+      .map((state) => state.id),
+  );
+  const escapes = (id: string) =>
+    [...(reach.get(id) ?? [])].some((other) => deadEnds.has(other) || finals.some((final) => final.id === other));
+
+  const reported = new Set<string>();
+  const suggestions: WorkflowSuggestion[] = [];
+  for (const state of diagram.states) {
+    if (reported.has(state.id) || !reach.get(state.id)?.has(state.id) || escapes(state.id)) continue;
+    // El ciclo = los estados que van y vuelven con este, en el orden del diagrama.
+    const cycle = diagram.states.filter(
+      (other) => other.id === state.id || (reach.get(state.id)?.has(other.id) && reach.get(other.id)?.has(state.id)),
+    );
+    for (const member of cycle) reported.add(member.id);
+    const exit = cycle[cycle.length - 1];
+    const closing = finals[0];
+    suggestions.push({
+      id: `cycle-without-exit:${state.id}`,
+      rule: "cycle-without-exit",
+      title: `Ciclo sin salida entre ${cycle.map((member) => `«${member.name}»`).join(", ")}`,
+      reason:
+        "Estos estados se pasan el hallazgo entre sí y desde ninguno se llega a un estado final: una vez que entra " +
+        "al ciclo, el hallazgo nunca podría cerrarse.",
+      target: { type: "state", id: state.id },
+      change: {
+        op: "add-transition",
+        from: exit.id,
+        to: closing.id,
+        label: "cerrar",
+        role: proposeRole(diagram, exit.id, closing.id),
+      },
+    });
+  }
   return suggestions;
 }
 
