@@ -69,6 +69,7 @@ describe("Asistente de diseño del Designer (US15-US17)", () => {
     cy.intercept("GET", "/api/auth/me", { fixture: "user.json" });
     cy.intercept("GET", "/api/designer/layouts", { layouts: [layout] });
     cy.intercept("PUT", "/api/designer/layouts/*/canvas", cy.spy().as("guardarLienzo"));
+    cy.intercept("GET", "/api/ai/status", { aiAvailable: true, reason: null, retryAt: null, provider: "mock" });
     cy.visit("/app-builder/designer/fields");
     cy.contains("Fecha compromiso");
   });
@@ -117,16 +118,34 @@ describe("Asistente de diseño del Designer (US15-US17)", () => {
     cy.contains("Campo seleccionado").parent().should("contain", "Texto corto");
   });
 
-  it("US18 si la IA no está disponible muestra solo las reglas y lo avisa", () => {
+  it("US18 si la IA no está disponible muestra solo las reglas y dice por qué", () => {
+    const retryAt = new Date(2026, 10, 9, 14, 5).toISOString();
     cy.intercept("POST", "/api/ai/designer/analyze", {
       ...analysis,
       aiAvailable: false,
+      aiUnavailableReason: "timeout",
+      aiRetryAt: retryAt,
       suggestions: analysis.suggestions.filter((s) => s.source === "rules"),
     });
     openAssistant();
+    cy.contains("● IA disponible");
     cy.contains("button", "Analizar formulario").click();
-    cy.contains("La IA no está disponible. Se muestran solo las revisiones automáticas.");
+    cy.contains("La IA tardó demasiado en responder. Se volverá a intentar a partir de las 14:05.");
+    cy.contains("Las revisiones automáticas y la edición manual del formulario siguen funcionando.");
+    cy.contains("● IA disponible").should("not.exist");
     cy.contains("2 sugerencias");
+  });
+
+  it("US18 avisa antes de analizar si la IA no está configurada o en pausa", () => {
+    cy.intercept("GET", "/api/ai/status", {
+      aiAvailable: false,
+      reason: "not-configured",
+      retryAt: null,
+      provider: "gemini",
+    });
+    openAssistant();
+    cy.get("[aria-label='Estado de la IA']").should("contain", "La IA no está configurada en el servidor.");
+    cy.contains("button", "Analizar formulario").should("be.enabled");
   });
 
   it("US18 si el asistente falla, el Designer sigue funcionando de forma manual", () => {
@@ -138,6 +157,25 @@ describe("Asistente de diseño del Designer (US15-US17)", () => {
     cy.contains("[role=radio]", "Campo").click();
     cy.contains("button", "+ Agregar campo").first().click();
     cy.contains("button", "Descartar").should("be.enabled");
+  });
+
+  it("US18 sin conexión con el asistente se puede editar y guardar el formulario", () => {
+    cy.intercept("/api/ai/**", { forceNetworkError: true });
+    cy.intercept("PUT", "/api/designer/layouts/*/canvas", (request) =>
+      request.reply({ layout: { ...layout, elements: request.body.elements } }),
+    ).as("guardar");
+    openAssistant();
+    cy.contains("No se pudo consultar el estado de la IA.");
+    cy.contains("button", "Analizar formulario").click();
+    cy.get("[role=alert]").should("contain", "El asistente no está disponible en este momento.");
+
+    cy.contains("[role=radio]", "Campo").click();
+    cy.contains("button", "+ Agregar campo").first().click();
+    cy.contains("button", /^Guardar$/).click();
+    cy.wait("@guardar")
+      .its("request.body.elements")
+      .should("have.length", layout.elements.length + 1);
+    cy.contains("Formulario guardado");
   });
 
   it("pide guardar antes de analizar si hay cambios sin guardar", () => {
