@@ -4,8 +4,6 @@
  * Design tokens — única fuente de verdad del sistema visual.
  * Cada token genera utilidades de Tailwind: --color-accent -> bg-accent, text-accent, border-accent...
  * Evita colores/tamaños sueltos en componentes; si falta un valor, agrégalo aquí.
- *
- * TODO(US06 - Juan Aguilar): validar colores, tipografía y consistencia responsive contra la identidad visual FEMSA.
  */
 @theme {
   --font-sans: "Open Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -49,7 +47,7 @@
   --color-femsa-green: #6cc24a;
 
   /* Estados */
-  --color-amber: #ba4f0f;
+  --color-amber: #d0620c;
   --color-amber-bg: #fef4ee;
   --color-amber-line: #f9ceb4;
   --color-amber-strong: #f7a16e;
@@ -111,6 +109,13 @@
  * toda la interfaz (texto, espacios, anchos fijos y el canvas) en la misma proporción.
  * Con zoom, 100vh se multiplica por el factor, así que se divide entre él para llenar justo la pantalla.
  */
+
+/* Con zoom, la altura fija del layout (sidebar y topbar quietos, solo scroll del contenido) también se divide entre el factor. */
+@media (min-width: 1600px) {
+  .app-shell {
+    height: calc(100vh / var(--screen-zoom, 1));
+  }
+}
 
 /* Full HD: 1920 x 1080 */
 @media (min-width: 1600px) and (max-width: 1999px) {

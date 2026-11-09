@@ -1,9 +1,5 @@
-
 import { httpClient } from "@/shared/api/httpClient";
-import type {
-  RiskClassificationRequest,
-  RiskClassificationResponse,
-} from "../types";
+import type { RiskClassificationRequest, RiskClassificationResponse } from "../types";
 
 export type RiskEvaluationHistoryItem = {
   evaluation_id: number;
@@ -58,10 +54,10 @@ export type RiskEvaluationSummary = {
   }[];
 
   byDepartmentLevel: {
-  department: string;
-  level: string;
-  count: number;
-}[];
+    department: string;
+    level: string;
+    count: number;
+  }[];
 };
 
 export type RiskEvaluationComparisonResponse = {
@@ -70,10 +66,7 @@ export type RiskEvaluationComparisonResponse = {
   canCompare: boolean;
 };
 
-function buildQuery(
-  filters: RiskEvaluationFilters = {},
-  includePagination = true
-) {
+function buildQuery(filters: RiskEvaluationFilters = {}, includePagination = true) {
   const params = new URLSearchParams();
 
   if (filters.search?.trim()) {
@@ -105,47 +98,25 @@ function buildQuery(
 }
 
 export const riskService = {
-  classify: (data: RiskClassificationRequest) =>
-    httpClient.post<RiskClassificationResponse>(
-      "/risks/classify",
-      data
-    ),
+  classify: (data: RiskClassificationRequest) => httpClient.post<RiskClassificationResponse>("/risks/classify", data),
 
-  saveEvaluation: (data: {
-    riskLibraryId: string;
-    probability: number;
-    impact: number;
-  }) =>
+  saveEvaluation: (data: { riskLibraryId: string; probability: number; impact: number }) =>
     httpClient.post("/risk-evaluations", data),
 
   getRecentEvaluations: (limit = 5) =>
-    httpClient.get<RiskEvaluationHistoryResponse>(
-      `/risk-evaluations?limit=${limit}`
-    ),
+    httpClient.get<RiskEvaluationHistoryResponse>(`/risk-evaluations?limit=${limit}`),
 
   getEvaluations: (filters: RiskEvaluationFilters = {}) =>
-    httpClient.get<RiskEvaluationHistoryResponse>(
-      `/risk-evaluations?${buildQuery(filters)}`
-    ),
+    httpClient.get<RiskEvaluationHistoryResponse>(`/risk-evaluations?${buildQuery(filters)}`),
 
-  getEvaluationsByRiskId: (
-    riskLibraryId: string,
-    limit = 100
-  ) =>
+  getEvaluationsByRiskId: (riskLibraryId: string, limit = 100) =>
     httpClient.get<RiskEvaluationsByRiskResponse>(
-      `/risk-evaluations/risk/${encodeURIComponent(riskLibraryId)}?limit=${limit}`
+      `/risk-evaluations/risk/${encodeURIComponent(riskLibraryId)}?limit=${limit}`,
     ),
 
   getSummary: (filters: RiskEvaluationFilters = {}) =>
-    httpClient.get<RiskEvaluationSummary>(
-      `/risk-evaluations/summary?${buildQuery(filters, false)}`
-    ),
+    httpClient.get<RiskEvaluationSummary>(`/risk-evaluations/summary?${buildQuery(filters, false)}`),
 
   compareEvaluations: (riskLibraryId: string) =>
-    httpClient.get<RiskEvaluationComparisonResponse>(
-      `/risk-evaluations/compare/${encodeURIComponent(riskLibraryId)}`
-    ),
+    httpClient.get<RiskEvaluationComparisonResponse>(`/risk-evaluations/compare/${encodeURIComponent(riskLibraryId)}`),
 };
-
-
-

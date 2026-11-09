@@ -1,3 +1,4 @@
+import { moduleForPath, usePermissions } from "@/features/auth/permissions";
 import femsaLogo from "@/assets/femsa-logo.png";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import type { NavSection } from "../../navigation";
@@ -17,13 +18,10 @@ function Brand() {
 
 export function Sidebar({ sections }: { sections: readonly NavSection[] }) {
   const user = useCurrentUser();
+  const { permissions } = usePermissions();
 
   const visibleSections = sections
     .map((section) => {
-      if (section.label !== "Configuración") {
-        return section;
-      }
-
       return {
         ...section,
         items: section.items.filter((item) => {
@@ -31,18 +29,20 @@ export function Sidebar({ sections }: { sections: readonly NavSection[] }) {
             return user.role === "Administrador";
           }
 
-          return true;
+          const moduleId = item.to ? moduleForPath(item.to) : undefined;
+          return !moduleId || permissions[moduleId] !== "hidden";
         }),
       };
     })
     .filter((section) => section.items.length > 0);
 
   return (
-    <aside className="hidden flex-col border-r border-line bg-nav desktop:flex">
+    <aside className="hidden min-h-0 flex-col border-r border-line bg-nav desktop:flex">
       <Brand />
       <SidebarSearch />
 
-      <nav className="flex-1 overflow-y-auto px-2.5 pt-2 pb-5">
+      {/* min-h-0: el menú hace scroll por dentro y el usuario / cerrar sesión siempre queda visible */}
+      <nav className="min-h-0 flex-1 overflow-y-auto px-2.5 pt-2 pb-5">
         {visibleSections.map((section) => (
           <NavGroup key={section.label} section={section} />
         ))}

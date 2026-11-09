@@ -1,6 +1,6 @@
 import type { AppVersion } from "../types";
 
-// TODO(US11 - Rafael Valdez): cargar versiones reales, cambios relevantes y restauración autorizada.
+// Solo para la insignia del panel embebido (US05). El historial real se carga con versionsService (US11).
 export const versionsMock: AppVersion[] = [
   {
     id: "v6",

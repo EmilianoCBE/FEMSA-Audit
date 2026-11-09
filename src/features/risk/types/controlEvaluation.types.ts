@@ -1,24 +1,8 @@
+export type Probability = "Inminente" | "Altamente probable" | "Probable" | "No probable" | "Remota";
 
-export type Probability =
-  | "Inminente"
-  | "Altamente probable"
-  | "Probable"
-  | "No probable"
-  | "Remota";
+export type Impact = "Menor" | "Bajo" | "Moderado" | "Alto" | "Crítico";
 
-export type Impact =
-  | "Menor"
-  | "Bajo"
-  | "Moderado"
-  | "Alto"
-  | "Crítico";
-
-export type ControlRating =
-  | "Inicial"
-  | "Funcional"
-  | "Definido"
-  | "Gestionado"
-  | "Optimizado";
+export type ControlRating = "Inicial" | "Funcional" | "Definido" | "Gestionado" | "Optimizado";
 
 /**
  * Información organizacional relacionada con un control

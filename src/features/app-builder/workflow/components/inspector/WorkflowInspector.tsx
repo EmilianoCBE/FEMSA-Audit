@@ -1,5 +1,5 @@
 import { Inspector, SegmentedControl, type SegmentedOption } from "@/shared/ui";
-import type { AssistantSuggestion, TransitionSettings } from "../../types";
+import type { TransitionSettings } from "../../types";
 import { DesignAssistantPanel } from "./DesignAssistantPanel";
 import { TransitionSettingsPanel } from "./TransitionSettingsPanel";
 
@@ -14,18 +14,14 @@ type WorkflowInspectorProps = {
   view: InspectorView;
   onViewChange: (view: InspectorView) => void;
   settings: TransitionSettings;
-  suggestions: readonly AssistantSuggestion[];
+  assistant: React.ComponentProps<typeof DesignAssistantPanel>;
 };
 
-export function WorkflowInspector({ view, onViewChange, settings, suggestions }: WorkflowInspectorProps) {
+export function WorkflowInspector({ view, onViewChange, settings, assistant }: WorkflowInspectorProps) {
   return (
     <Inspector>
       <SegmentedControl className="px-3 pt-2.5" options={VIEW_OPTIONS} value={view} onValueChange={onViewChange} />
-      {view === "settings" ? (
-        <TransitionSettingsPanel settings={settings} />
-      ) : (
-        <DesignAssistantPanel suggestions={suggestions} />
-      )}
+      {view === "settings" ? <TransitionSettingsPanel settings={settings} /> : <DesignAssistantPanel {...assistant} />}
     </Inspector>
   );
 }

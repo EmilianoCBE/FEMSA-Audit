@@ -9,10 +9,7 @@ import type {
 
 export const controlEvaluationService = {
   async getRisks(signal?: AbortSignal) {
-    return httpClient.get<{ risks: RiskWithControlsSummary[] }>(
-      "/control-evaluations/risks",
-      signal,
-    );
+    return httpClient.get<{ risks: RiskWithControlsSummary[] }>("/control-evaluations/risks", signal);
   },
 
   async getRiskDetail(riskTrackingId: string, signal?: AbortSignal) {
@@ -23,16 +20,10 @@ export const controlEvaluationService = {
   },
 
   async getControlHistory(controlId: number, signal?: AbortSignal) {
-    return httpClient.get<ControlEvaluationHistory>(
-      `/control-evaluations/control/${controlId}`,
-      signal,
-    );
+    return httpClient.get<ControlEvaluationHistory>(`/control-evaluations/control/${controlId}`, signal);
   },
 
   async createEvaluation(data: CreateControlEvaluationRequest) {
-    return httpClient.post<CreateControlEvaluationResponse>(
-      "/control-evaluations",
-      data,
-    );
+    return httpClient.post<CreateControlEvaluationResponse>("/control-evaluations", data);
   },
 };
