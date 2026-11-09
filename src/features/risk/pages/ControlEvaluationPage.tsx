@@ -1295,38 +1295,32 @@ useEffect(() => {
 
                       <div>
                         <label
-                          htmlFor="risk-level-filter"
-                          className="mb-1.5 block text-control font-medium text-ink"
-                        >
-                          Riesgo inherente
-                        </label>
-                        <label
                             htmlFor="risk-level-filter"
                             className="mb-1.5 block text-control font-medium text-ink"
-                            >
+                        >
                             Riesgo residual
-                            </label>
+                        </label>
 
-                            <select
+                        <select
                             id="risk-level-filter"
                             value={residualLevelFilter}
                             onChange={(event) => {
-                                setResidualLevelFilter(event.target.value);
-                                setCurrentPage(1);
+                            setResidualLevelFilter(event.target.value);
+                            setCurrentPage(1);
                             }}
                             className="w-full rounded-md border border-line-2 bg-surface px-3 py-2 text-body-sm text-ink outline-none focus:border-accent"
-                            >
+                        >
                             <option value="Todos">Todos los niveles</option>
                             <option value="Pendiente de evaluación">
-                                Pendiente de evaluación
+                            Pendiente de evaluación
                             </option>
                             {residualLevels.map((level) => (
-                                <option key={level} value={level}>
+                            <option key={level} value={level}>
                                 {level}
-                                </option>
+                            </option>
                             ))}
-                            </select>
-                      </div>
+                        </select>
+                        </div>
                     </div>
 
                     <div className="flex flex-col gap-3 border-b border-line pb-4 sm:flex-row sm:items-end sm:justify-between">
@@ -1576,13 +1570,6 @@ useEffect(() => {
                         <h2 className="mt-2 text-2xl font-bold leading-tight tracking-tight text-slate-900">
                             {riskDetail.risk.name}
                         </h2>
-
-                        <div className="mt-5">
-                            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                            Nivel inherente
-                            </p>
-                            <LevelBadge level={riskDetail.risk.inherentLevel} />
-                        </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-3">
