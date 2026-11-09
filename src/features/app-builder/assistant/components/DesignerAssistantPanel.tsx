@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@/shared/hooks/useQuery";
 import { Badge, type BadgeTone, Button } from "@/shared/ui";
 import type { ElementoDesigner } from "../../designer/types";
@@ -165,10 +165,25 @@ export function DesignerAssistantPanel({
   );
 }
 
-/** US18: si la IA está disponible, antes de analizar (el servidor responde sin llamarla). */
-function AiStatusNotice() {
-  const { data, error } = useQuery(assistantService.status);
+/** Con el panel abierto se vuelve a preguntar, para notar si la IA se cae o se recupera. */
+const STATUS_REFRESH_MS = 60_000;
 
+/** US18: si la IA está disponible, antes de analizar (el servidor la comprueba con una consulta ligera). */
+function AiStatusNotice() {
+  const { data, error, isLoading, reload } = useQuery(assistantService.status);
+
+  useEffect(() => {
+    const timer = setInterval(reload, STATUS_REFRESH_MS);
+    return () => clearInterval(timer);
+  }, [reload]);
+
+  if (!data && isLoading) {
+    return (
+      <p role="status" className="mt-2 text-label text-muted">
+        Comprobando la IA…
+      </p>
+    );
+  }
   if (error) {
     return (
       <p role="status" className="mt-2 text-label text-muted">

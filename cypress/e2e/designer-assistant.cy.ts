@@ -148,6 +148,17 @@ describe("Asistente de diseño del Designer (US15-US17)", () => {
     cy.contains("button", "Analizar formulario").should("be.enabled");
   });
 
+  it("US18 mientras el servidor comprueba la IA lo indica, y luego muestra el resultado", () => {
+    cy.intercept("GET", "/api/ai/status", {
+      delay: 800,
+      body: { aiAvailable: false, reason: "paused", retryAt: null, provider: "gemini" },
+    });
+    openAssistant();
+    cy.contains("Comprobando la IA…");
+    cy.get("[aria-label='Estado de la IA']").should("contain", "La IA falló hace poco y está en pausa.");
+    cy.contains("Comprobando la IA…").should("not.exist");
+  });
+
   it("US18 si el asistente falla, el Designer sigue funcionando de forma manual", () => {
     cy.intercept("POST", "/api/ai/designer/analyze", { statusCode: 500, body: { msg: "Error" } });
     openAssistant();
