@@ -1,16 +1,11 @@
-import { useEffect, useState } from "react";
-import { useQuery } from "@/shared/hooks/useQuery";
+import { useState } from "react";
 import { Badge, type BadgeTone, Button, FilterChip } from "@/shared/ui";
 import type { ElementoDesigner } from "../../designer/types";
-import {
-  ANALYZE_TIMEOUT_MS,
-  aiUnavailableMessage,
-  assistantErrorMessage,
-  MANUAL_STILL_WORKS,
-} from "../lib/aiAvailability";
+import { ANALYZE_TIMEOUT_MS, aiUnavailableMessage, assistantErrorMessage } from "../lib/aiAvailability";
 import { describeChange, FIELD_TYPE_NAMES } from "../lib/designerChanges";
 import { sortByPriority } from "../lib/suggestionList";
 import { assistantService } from "../services/assistantService";
+import { AiStatusNotice } from "./AiStatusNotice";
 import { AssistantMetrics } from "./AssistantMetrics";
 import { SuggestionList } from "./SuggestionList";
 import type {
@@ -136,6 +131,11 @@ export function DesignerAssistantPanel({
         {hasUnsavedChanges && (
           <p className="mt-2 text-label text-muted">Guarda los cambios del formulario para analizar lo que ves.</p>
         )}
+        {/* RNF-13: las etiquetas son texto libre y sí llegan a la IA. */}
+        <p className="mt-2 text-label text-muted">
+          A la IA solo se envía la estructura del formulario (tipos, etiquetas, secciones). No escribas datos personales
+          en las etiquetas.
+        </p>
         {/* Después de analizar, el aviso del análisis reemplaza a este (es más reciente). */}
         {!analysis && <AiStatusNotice />}
       </div>
@@ -215,47 +215,6 @@ export function DesignerAssistantPanel({
       )}
 
       <AssistantMetrics appId={appId} refreshKey={metricsVersion} />
-    </div>
-  );
-}
-
-/** Con el panel abierto se vuelve a preguntar, para notar si la IA se cae o se recupera. */
-const STATUS_REFRESH_MS = 60_000;
-
-/** US18: si la IA está disponible, antes de analizar (el servidor la comprueba con una consulta ligera). */
-function AiStatusNotice() {
-  const { data, error, isLoading, reload } = useQuery(assistantService.status);
-
-  useEffect(() => {
-    const timer = setInterval(reload, STATUS_REFRESH_MS);
-    return () => clearInterval(timer);
-  }, [reload]);
-
-  if (!data && isLoading) {
-    return (
-      <p role="status" className="mt-2 text-label text-muted">
-        Comprobando la IA…
-      </p>
-    );
-  }
-  if (error) {
-    return (
-      <p role="status" className="mt-2 text-label text-muted">
-        No se pudo consultar el estado de la IA. {MANUAL_STILL_WORKS}
-      </p>
-    );
-  }
-  if (!data) return null;
-  if (data.aiAvailable) {
-    return <p className="mt-2 text-label text-green">● IA disponible</p>;
-  }
-  return (
-    <div
-      role="status"
-      aria-label="Estado de la IA"
-      className="mt-3 rounded-md border border-amber-line bg-amber-bg px-3 py-2 text-body-sm text-amber"
-    >
-      {aiUnavailableMessage(data.reason, data.retryAt)}
     </div>
   );
 }

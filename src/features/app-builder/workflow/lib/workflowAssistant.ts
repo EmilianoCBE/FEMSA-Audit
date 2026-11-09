@@ -24,7 +24,11 @@ export type WorkflowRuleId =
   | "missing-final-state"
   | "transition-without-role"
   | "duplicate-transition"
-  | "cycle-without-exit";
+  | "cycle-without-exit"
+  // Propuestas de la IA (US15, RF-17/RF-18): no son reglas, pero se muestran y deciden igual.
+  | "ai-relation"
+  | "ai-role"
+  | "ai-observation";
 
 export type WorkflowSuggestion = {
   id: string;
@@ -36,6 +40,8 @@ export type WorkflowSuggestion = {
   target: { type: "state" | "transition"; id: string } | null;
   /** Sin `change` la sugerencia solo informa: el usuario la corrige a mano. */
   change?: WorkflowChange;
+  /** "ai" si la propuso la IA; sin valor, viene de las reglas. */
+  source?: "ai";
 };
 
 const NODE_SIZE = { width: 152, height: 60 };
