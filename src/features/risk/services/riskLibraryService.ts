@@ -8,6 +8,15 @@ export interface RiskLibraryItem {
   created_at: string;
 }
 
+export interface AssociatedRisk {
+  risk_id: number;
+  tracking_id: string;
+  name: string;
+  category: string | null;
+  inherent_level: string | null;
+}
+
+
 export interface RiskLibraryResponse {
   count: number;
   risks: RiskLibraryItem[];
@@ -76,4 +85,11 @@ export const riskLibraryService = {
   httpClient.get<RiskLibraryRegisterResponse>(
     `/risk-library/${encodeURIComponent(id)}/register`
   ),
+
+  
+getAssociatedRisks: (id: string) =>
+  httpClient.get<{ count: number; risks: AssociatedRisk[] }>(
+    `/risk-library/${encodeURIComponent(id)}/register`
+  ),
+
 };
