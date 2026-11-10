@@ -5,6 +5,7 @@ const STATUS_CONFIG: Record<VersionStatus, { label: string; tone: BadgeTone }> =
   draft: { label: "Borrador", tone: "amber" },
   current: { label: "Vigente", tone: "green" },
   archived: { label: "Archivada", tone: "gray" },
+  discarded: { label: "Descartada", tone: "red" },
 };
 
 export function VersionStatusBadge({ status }: { status: VersionStatus }) {

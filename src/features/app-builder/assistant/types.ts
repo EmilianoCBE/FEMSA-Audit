@@ -27,10 +27,24 @@ export type DesignerSuggestion = {
   change?: DesignerChange;
 };
 
+/** US18: por qué no hay IA. `paused` = falló hace poco y el servidor espera antes de volver a llamarla. */
+export type AiUnavailableReason = "not-configured" | "timeout" | "error" | "paused";
+
+/** US18: estado de la IA sin llamarla (`GET /api/ai/status`). */
+export type AiStatus = {
+  aiAvailable: boolean;
+  reason: AiUnavailableReason | null;
+  retryAt: string | null;
+  provider: string;
+};
+
 export type DesignerAnalysis = {
   appId: string;
   /** false si la IA falló o tardó: solo vienen las reglas (US18). */
   aiAvailable: boolean;
+  aiUnavailableReason?: AiUnavailableReason | null;
+  /** A partir de cuándo el servidor vuelve a intentar con la IA. */
+  aiRetryAt?: string | null;
   /** true si las sugerencias se guardaron en la BD y se pueden registrar las decisiones. */
   recorded: boolean;
   provider: string;
@@ -41,3 +55,14 @@ export type DesignerAnalysis = {
 
 /** Decisión del usuario sobre una sugerencia (US17). */
 export type SuggestionDecision = "accepted" | "rejected" | "replaced";
+
+export type DecisionCounts = { total: number; pending: number; accepted: number; rejected: number; replaced: number };
+
+/** Métricas del asistente para un formulario (`GET /api/ai/designer/metrics`). */
+export type DesignerMetrics = {
+  appId: string;
+  bySource: Record<SuggestionSource, DecisionCounts>;
+  /** Aceptadas + reemplazadas entre las decididas (0–1); `null` si no hay decisiones. */
+  acceptanceRate: Record<SuggestionSource, number | null>;
+  avgAiLatencyMs: number | null;
+};

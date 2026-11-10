@@ -9,17 +9,19 @@ const LEVEL_CONFIG: Record<PermissionLevel, { label: string; className: string }
 };
 
 type PermissionToggleProps = {
+  disabled?: boolean;
   level: PermissionLevel;
   onChange: (level: PermissionLevel) => void;
   /** Descripción accesible, ej. "Título del hallazgo · Auditor". */
   label: string;
 };
 
-export function PermissionToggle({ level, onChange, label }: PermissionToggleProps) {
+export function PermissionToggle({ level, onChange, label, disabled }: PermissionToggleProps) {
   const config = LEVEL_CONFIG[level];
   return (
     <button
       type="button"
+      disabled={disabled}
       aria-label={`${label}: ${config.label}`}
       onClick={() => onChange(nextPermissionLevel(level))}
       className={cn("inline-block min-w-16 rounded border px-2 py-0.5 text-label font-medium", config.className)}

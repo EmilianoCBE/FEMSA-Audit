@@ -58,7 +58,15 @@ describe("Asistente de diseño del Designer (US15-US17)", () => {
     ],
   };
 
-  const card = (title: string) => cy.get(`li[aria-label="${title}"]`);
+  /** Abre la tarjeta (las pendientes se pliegan a una línea) y devuelve el elemento. */
+  const card = (title: string) => {
+    cy.get(`li[aria-label="${title}"] > button[aria-expanded]`).then(($button) => {
+      if ($button.attr("aria-expanded") === "false") cy.wrap($button).click();
+    });
+    return cy.get(`li[aria-label="${title}"]`);
+  };
+  const lastDecision = () => cy.get("[aria-label='Última decisión']");
+  const pendingCards = () => cy.get("[aria-label='Sugerencias pendientes'] > li");
   const openAssistant = () => cy.contains("[role=radio]", "Asistente IA").click();
 
   it("muestra el tipo original antes de aceptar", () => {
@@ -69,6 +77,7 @@ describe("Asistente de diseño del Designer (US15-US17)", () => {
     cy.intercept("GET", "/api/auth/me", { fixture: "user.json" });
     cy.intercept("GET", "/api/designer/layouts", { layouts: [layout] });
     cy.intercept("PUT", "/api/designer/layouts/*/canvas", cy.spy().as("guardarLienzo"));
+    cy.intercept("GET", "/api/ai/status", { aiAvailable: true, reason: null, retryAt: null, provider: "mock" });
     cy.visit("/app-builder/designer/fields");
     cy.contains("Fecha compromiso");
   });
@@ -83,20 +92,22 @@ describe("Asistente de diseño del Designer (US15-US17)", () => {
       cy.contains("Por qué: La etiqueta indica");
       cy.contains("Cambio propuesto: Cambiar «Fecha compromiso» a Fecha");
       cy.contains("button", "Aceptar").click();
-      cy.contains("Aceptada");
     });
+    lastDecision().should("contain", "Aceptada: se aplicó al formulario. Revisa y guarda.");
     // La etiqueta de tipo del campo pasa de "Texto" a "Fecha".
     cy.contains("button", "Fecha compromiso").children().last().should("have.text", "Fecha");
 
-    card(analysis.suggestions[2].title).within(() => {
-      cy.contains("button", "Rechazar").click();
-      cy.contains("Rechazada: no se cambió nada.");
-    });
+    card(analysis.suggestions[2].title).within(() => cy.contains("button", "Rechazar").click());
+    lastDecision().should("contain", "Rechazada: no se cambió nada.");
     cy.contains("button", "Fecha de detección").should("not.exist");
 
     // Nada se guardó solo: el usuario decide cuándo guardar.
     cy.get("@guardarLienzo").should("not.have.been.called");
-    cy.contains("3 sugerencias · 1 pendientes");
+    cy.contains("2 de 3 revisadas");
+    cy.contains("1 pendientes");
+    // Las decididas salen de la lista y quedan juntas abajo, plegadas.
+    cy.contains("summary", "Ya decididas (2)").click();
+    cy.get("[aria-label='Sugerencias decididas'] > li").should("have.length", 2).first().should("contain", "Aceptada");
   });
 
   it("US17 reemplazar aplica la versión editada por el usuario e 'Ir al campo' lo selecciona", () => {
@@ -108,8 +119,8 @@ describe("Asistente de diseño del Designer (US15-US17)", () => {
       cy.contains("button", "Reemplazar").click();
       cy.get("input").clear().type("Fecha en que se detectó");
       cy.contains("button", "Aplicar mi versión").click();
-      cy.contains("Reemplazada");
     });
+    lastDecision().should("contain", "Reemplazada");
     cy.contains("button", "Fecha en que se detectó");
 
     openAssistant();
@@ -117,16 +128,45 @@ describe("Asistente de diseño del Designer (US15-US17)", () => {
     cy.contains("Campo seleccionado").parent().should("contain", "Texto corto");
   });
 
-  it("US18 si la IA no está disponible muestra solo las reglas y lo avisa", () => {
+  it("US18 si la IA no está disponible muestra solo las reglas y dice por qué", () => {
+    const retryAt = new Date(2026, 10, 9, 14, 5).toISOString();
     cy.intercept("POST", "/api/ai/designer/analyze", {
       ...analysis,
       aiAvailable: false,
+      aiUnavailableReason: "timeout",
+      aiRetryAt: retryAt,
       suggestions: analysis.suggestions.filter((s) => s.source === "rules"),
     });
     openAssistant();
+    cy.contains("● IA disponible");
     cy.contains("button", "Analizar formulario").click();
-    cy.contains("La IA no está disponible. Se muestran solo las revisiones automáticas.");
-    cy.contains("2 sugerencias");
+    cy.contains("La IA tardó demasiado en responder. Se volverá a intentar a partir de las 14:05.");
+    cy.contains("Las revisiones automáticas y la edición manual del formulario siguen funcionando.");
+    cy.contains("● IA disponible").should("not.exist");
+    cy.contains("0 de 2 revisadas");
+  });
+
+  it("US18 avisa antes de analizar si la IA no está configurada o en pausa", () => {
+    cy.intercept("GET", "/api/ai/status", {
+      aiAvailable: false,
+      reason: "not-configured",
+      retryAt: null,
+      provider: "gemini",
+    });
+    openAssistant();
+    cy.get("[aria-label='Estado de la IA']").should("contain", "La IA no está configurada en el servidor.");
+    cy.contains("button", "Analizar formulario").should("be.enabled");
+  });
+
+  it("US18 mientras el servidor comprueba la IA lo indica, y luego muestra el resultado", () => {
+    cy.intercept("GET", "/api/ai/status", {
+      delay: 800,
+      body: { aiAvailable: false, reason: "paused", retryAt: null, provider: "gemini" },
+    });
+    openAssistant();
+    cy.contains("Comprobando la IA…");
+    cy.get("[aria-label='Estado de la IA']").should("contain", "La IA falló hace poco y está en pausa.");
+    cy.contains("Comprobando la IA…").should("not.exist");
   });
 
   it("US18 si el asistente falla, el Designer sigue funcionando de forma manual", () => {
@@ -138,6 +178,65 @@ describe("Asistente de diseño del Designer (US15-US17)", () => {
     cy.contains("[role=radio]", "Campo").click();
     cy.contains("button", "+ Agregar campo").first().click();
     cy.contains("button", "Descartar").should("be.enabled");
+  });
+
+  it("US18 sin conexión con el asistente se puede editar y guardar el formulario", () => {
+    cy.intercept("/api/ai/**", { forceNetworkError: true });
+    cy.intercept("PUT", "/api/designer/layouts/*/canvas", (request) =>
+      request.reply({ layout: { ...layout, elements: request.body.elements } }),
+    ).as("guardar");
+    openAssistant();
+    cy.contains("No se pudo consultar el estado de la IA.");
+    cy.contains("button", "Analizar formulario").click();
+    cy.get("[role=alert]").should("contain", "El asistente no está disponible en este momento.");
+
+    cy.contains("[role=radio]", "Campo").click();
+    cy.contains("button", "+ Agregar campo").first().click();
+    cy.contains("button", /^Guardar$/).click();
+    cy.wait("@guardar")
+      .its("request.body.elements")
+      .should("have.length", layout.elements.length + 1);
+    cy.contains("Formulario guardado");
+  });
+
+  it("con muchas sugerencias la lista no se alarga: 5 a la vez, una abierta y filtro por origen", () => {
+    const many = Array.from({ length: 9 }, (_, index) => ({
+      id: `s${index + 1}`,
+      source: index < 6 ? "rules" : "ai",
+      kind: index < 6 ? "inconsistency" : "field",
+      title: `Sugerencia número ${index + 1}`,
+      reason: `Motivo de la sugerencia ${index + 1}.`,
+      confidence: "media",
+    }));
+    cy.intercept("POST", "/api/ai/designer/analyze", { ...analysis, suggestions: many });
+    openAssistant();
+    cy.contains("button", "Analizar formulario").click();
+
+    cy.contains("0 de 9 revisadas");
+    pendingCards().should("have.length", 5);
+    // Solo la primera está abierta; las demás muestran el título en una línea.
+    cy.get("button[aria-expanded=true]").should("have.length", 1);
+    cy.contains("Motivo de la sugerencia 1.");
+    cy.contains("Motivo de la sugerencia 2.").should("not.exist");
+    cy.get("li[aria-label='Sugerencia número 2'] > button").click();
+    cy.contains("Motivo de la sugerencia 2.");
+    cy.contains("Motivo de la sugerencia 1.").should("not.exist");
+
+    cy.contains("button", "Mostrar 4 más (quedan 4)").click();
+    pendingCards().should("have.length", 9);
+    cy.contains("button", "Mostrar menos").click();
+    pendingCards().should("have.length", 5);
+
+    // Rechazar una la quita de la lista y entra la siguiente.
+    card("Sugerencia número 1").within(() => cy.contains("button", "Rechazar").click());
+    cy.contains("1 de 9 revisadas");
+    pendingCards().filter("[aria-label='Sugerencia número 1']").should("not.exist");
+    pendingCards().should("have.length", 5);
+
+    cy.contains("button", "IA (3)").click();
+    pendingCards().should("have.length", 3).first().should("contain", "IA");
+    cy.contains("button", "Reglas (5)").click();
+    pendingCards().should("have.length", 5);
   });
 
   it("pide guardar antes de analizar si hay cambios sin guardar", () => {
@@ -190,10 +289,47 @@ describe("Asistente de diseño del Designer (US15-US17)", () => {
     cy.intercept("POST", "/api/ai/recommendations/*/decision", cy.spy().as("registro"));
     openAssistant();
     cy.contains("button", "Analizar formulario").click();
-    card(analysis.suggestions[2].title).within(() => {
-      cy.contains("button", "Rechazar").click();
-      cy.contains("Rechazada");
-    });
+    card(analysis.suggestions[2].title).within(() => cy.contains("button", "Rechazar").click());
+    lastDecision().should("contain", "Rechazada");
     cy.get("@registro").should("not.have.been.called");
+  });
+  it("US17 muestra las métricas de aceptación y las actualiza después de cada decisión", () => {
+    const counts = (accepted: number, pending: number) => ({ total: 3, pending, accepted, rejected: 0, replaced: 0 });
+    const metrics = (accepted: number, pending: number) => ({
+      appId: "layout dummy",
+      bySource: {
+        rules: counts(accepted, pending),
+        ai: { total: 0, pending: 0, accepted: 0, rejected: 0, replaced: 0 },
+      },
+      acceptanceRate: { rules: accepted ? 1 : null, ai: null },
+      avgAiLatencyMs: 2340,
+    });
+    cy.intercept("GET", "/api/ai/designer/metrics?appId=layout%20dummy", metrics(0, 3)).as("metricas");
+    cy.intercept("POST", "/api/ai/designer/analyze", analysis);
+    cy.intercept("POST", "/api/ai/recommendations/*/decision", { recommendation: {} }).as("decision");
+    openAssistant();
+    cy.wait("@metricas");
+    cy.get("[aria-label='Métricas del asistente']").within(() => {
+      cy.contains("Reglas: aceptación").next().should("have.text", "—");
+      cy.contains("Tiempo promedio de la IA: 2.3 s (meta < 10 s)");
+    });
+
+    cy.contains("button", "Analizar formulario").click();
+    cy.intercept("GET", "/api/ai/designer/metrics?appId=layout%20dummy", metrics(1, 2)).as("metricas");
+    card(analysis.suggestions[1].title).within(() => cy.contains("button", "Aceptar").click());
+    cy.wait("@decision");
+    cy.get("[aria-label='Métricas del asistente']").within(() => {
+      cy.contains("Reglas: aceptación").next().should("have.text", "100 %");
+      cy.contains("1 aceptadas · 0 reemplazadas · 0 rechazadas · 2 pendientes");
+    });
+  });
+
+  it("si las métricas no responden, el asistente sigue funcionando", () => {
+    cy.intercept("GET", "/api/ai/designer/metrics*", { statusCode: 503, body: { msg: "Sin tabla" } });
+    cy.intercept("POST", "/api/ai/designer/analyze", analysis);
+    openAssistant();
+    cy.contains("Las métricas del asistente no están disponibles.");
+    cy.contains("button", "Analizar formulario").click();
+    cy.contains("0 de 3 revisadas");
   });
 });

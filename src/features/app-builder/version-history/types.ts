@@ -1,12 +1,16 @@
 import type { ElementoDesigner } from "../designer/types";
 
-export type VersionStatus = "draft" | "current" | "archived";
+export type VersionStatus = "draft" | "current" | "archived" | "discarded";
 
 export type AppVersion = {
   id: string;
   version: string;
+  /** Fecha ISO en que se guardó la versión. */
+  createdAt?: string | null;
   /** Fecha ISO de publicación; `null` si la versión sigue en edición. */
   publishedAt: string | null;
+  /** Quién la publicó, si se publicó. */
+  publishedBy?: string | null;
   status: VersionStatus;
   author: string;
   changes: readonly string[];
@@ -21,3 +25,21 @@ export type AppConfig = {
 };
 
 export type AppVersionDetail = AppVersion & { config: AppConfig };
+
+export type VersionHistory = {
+  versions: AppVersion[];
+  designer: {
+    /** Versión cuya configuración coincide con el lienzo actual del Designer. */
+    versionId: string | null;
+    /** El lienzo tiene cambios que no están en ninguna versión. */
+    hasUnversionedChanges: boolean;
+  };
+  /** El rol de la sesión puede guardar, publicar, descartar y restaurar. */
+  canEdit: boolean;
+};
+
+export type RestoreResult = {
+  version: AppVersionDetail;
+  /** Borrador con el estado previo del Designer, si tenía cambios sin versión. */
+  backup: AppVersionDetail | null;
+};

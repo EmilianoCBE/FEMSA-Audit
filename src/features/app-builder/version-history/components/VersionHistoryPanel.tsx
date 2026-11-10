@@ -1,10 +1,13 @@
-import { useCallback, useState } from "react";
+import { usePermissions } from "@/features/auth/permissions";
+import { useCallback, useRef, useState } from "react";
 import { useQuery } from "@/shared/hooks/useQuery";
 import { Button, ContentArea, EmptyState, QueryState, SectionToolbar } from "@/shared/ui";
 import { designerService } from "../../designer/services/designerService";
 import type { PlantillaDesigner } from "../../designer/types";
+import { diffConfigs, suggestChanges } from "../lib/compareVersions";
 import { versionsService } from "../services/versionsService";
-import type { AppVersion, AppVersionDetail } from "../types";
+import type { AppConfig, AppVersion, AppVersionDetail, VersionHistory } from "../types";
+import { CompareVersions, DESIGNER_OPTION } from "./CompareVersions";
 import { SaveVersionForm } from "./SaveVersionForm";
 import { VersionEntry } from "./VersionEntry";
 
@@ -41,35 +44,93 @@ type AppVersionHistoryProps = {
   onSelectApp: (appId: string) => void;
 };
 
-// US11 - Rafael Valdez: guardar, consultar, publicar y restaurar versiones de la aplicación seleccionada.
+function Notice({ tone, children, onClose }: { tone: "error" | "success"; children: string; onClose: () => void }) {
+  const styles = tone === "error" ? "border-red-line bg-red-bg text-red" : "border-green-line bg-green-bg text-green";
+  return (
+    <div
+      role={tone === "error" ? "alert" : "status"}
+      className={`mb-3 flex items-start gap-2 rounded-md border px-3 py-2 text-body-sm ${styles}`}
+    >
+      <span className="flex-1">{children}</span>
+      <button
+        type="button"
+        aria-label="Cerrar mensaje"
+        className="leading-none opacity-70 hover:opacity-100"
+        onClick={onClose}
+      >
+        ×
+      </button>
+    </div>
+  );
+}
+
+// US11 - Rafael Valdez: guardar, consultar, comparar, publicar, descartar y restaurar versiones de la aplicación.
 function AppVersionHistory({ appId, plantillas, onSelectApp }: AppVersionHistoryProps) {
+  // US13: el módulo debe estar en "edit" para el rol; US11: el back confirma si además puede versionar.
+  const canEditModule = usePermissions().permissions["app-builder"] === "edit";
   const listVersions = useCallback((signal: AbortSignal) => versionsService.list(appId, signal), [appId]);
   const query = useQuery(listVersions);
-  const [details, setDetails] = useState<Record<string, AppVersionDetail>>({});
-  const [isSaving, setIsSaving] = useState(false);
+  // Las versiones no cambian una vez guardadas: su detalle se pide una sola vez.
+  const detailsCache = useRef(new Map<string, AppVersionDetail>());
+  const [openDetails, setOpenDetails] = useState<Record<string, AppVersionDetail>>({});
+  const [loadingDetailId, setLoadingDetailId] = useState<string>();
+  const [saveForm, setSaveForm] = useState<{ initialText: string }>();
+  const [isComparing, setIsComparing] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
   const [message, setMessage] = useState<string>();
   const [error, setError] = useState<string>();
 
-  async function run(action: () => Promise<string>, fallbackError: string) {
+  const loadDetail = useCallback(
+    async (versionId: string) => {
+      const cached = detailsCache.current.get(versionId);
+      if (cached) return cached;
+      const detail = await versionsService.get(appId, versionId);
+      detailsCache.current.set(versionId, detail);
+      return detail;
+    },
+    [appId],
+  );
+
+  const loadConfig = useCallback(
+    async (id: string): Promise<AppConfig> =>
+      id === DESIGNER_OPTION
+        ? { elements: (await designerService.getPlantillaDesigner(appId)).elements }
+        : (await loadDetail(id)).config,
+    [appId, loadDetail],
+  );
+
+  /** Marca ocupado, limpia mensajes, ejecuta y recarga el historial (también si falló: pudo cambiar a medias). */
+  async function run(action: () => Promise<string | undefined>, fallbackError: string) {
     setIsBusy(true);
     setMessage(undefined);
     setError(undefined);
     try {
       setMessage(await action());
-      query.reload();
     } catch (reason) {
       setError(errorMessage(reason, fallbackError));
     } finally {
       setIsBusy(false);
+      query.reload();
     }
   }
+
+  /** Abre el formulario con los cambios sugeridos (Designer vs. la versión más reciente). */
+  const openSaveForm = (history: VersionHistory) =>
+    run(async () => {
+      const [latest] = history.versions;
+      const plantilla = await designerService.getPlantillaDesigner(appId);
+      const suggestions = latest
+        ? suggestChanges(diffConfigs(await loadConfig(latest.id), { elements: plantilla.elements }))
+        : ["Versión inicial"];
+      setSaveForm({ initialText: suggestions.join("\n") });
+      return undefined;
+    }, "No se pudo preparar la versión.");
 
   const saveVersion = (changes: string[]) =>
     run(async () => {
       const plantilla = await designerService.getPlantillaDesigner(appId);
       const saved = await versionsService.save(appId, { elements: plantilla.elements }, changes);
-      setIsSaving(false);
+      setSaveForm(undefined);
       return `Se guardó ${saved.version} como borrador.`;
     }, "No se pudo guardar la versión.");
 
@@ -79,37 +140,67 @@ function AppVersionHistory({ appId, plantillas, onSelectApp }: AppVersionHistory
       return `${version.version} es ahora la versión vigente.`;
     }, "No se pudo publicar la versión.");
 
-  const restoreVersion = (version: AppVersion) =>
+  const discardVersion = (version: AppVersion) =>
     run(async () => {
-      const restored = await versionsService.restore(appId, version.id);
-      if (restored.config.elements) await designerService.saveCanvasDesigner(appId, restored.config.elements);
-      return `Se restauró la configuración de ${version.version} como ${restored.version} (borrador).`;
+      await versionsService.discard(appId, version.id);
+      return `Se descartó ${version.version}.`;
+    }, "No se pudo descartar la versión.");
+
+  const restoreVersion = (version: AppVersion, { publish }: { publish: boolean }) =>
+    run(async () => {
+      const { version: restored, backup } = await versionsService.restore(appId, version.id);
+      const backupNote = backup ? ` El estado anterior del Designer se guardó como ${backup.version}.` : "";
+      if (!publish) {
+        return `Se restauró la configuración de ${version.version} como ${restored.version} (borrador).${backupNote}`;
+      }
+      await versionsService.publish(appId, restored.id);
+      return `Se restauró la configuración de ${version.version} como ${restored.version} y ahora es la versión vigente.${backupNote}`;
     }, "No se pudo restaurar la versión.");
 
   async function toggleDetail(version: AppVersion) {
-    if (details[version.id]) {
-      setDetails(({ [version.id]: _hidden, ...rest }) => rest);
+    if (openDetails[version.id]) {
+      setOpenDetails(({ [version.id]: _hidden, ...rest }) => rest);
       return;
     }
     setError(undefined);
+    setLoadingDetailId(version.id);
     try {
-      const detail = await versionsService.get(appId, version.id);
-      setDetails((current) => ({ ...current, [version.id]: detail }));
+      const detail = await loadDetail(version.id);
+      setOpenDetails((current) => ({ ...current, [version.id]: detail }));
     } catch (reason) {
       setError(errorMessage(reason, "No se pudo cargar la versión."));
+    } finally {
+      setLoadingDetailId(undefined);
     }
   }
+
+  const history = query.data;
+  const versions = history?.versions ?? [];
+  const canEdit = canEditModule && (history?.canEdit ?? false);
+  const hasUnversionedChanges = history?.designer.hasUnversionedChanges ?? false;
+  const nothingToSave = versions.length > 0 && !hasUnversionedChanges;
+  const canCompare = versions.length >= 2 || (versions.length === 1 && hasUnversionedChanges);
+  const currentVersion = versions.find((version) => version.status === "current")?.version;
 
   return (
     <>
       <SectionToolbar
-        description="Cada versión guarda la configuración completa del formulario. Los hallazgos ya registrados conservan la estructura con la que fueron creados."
+        description="Cada versión guarda la configuración completa del formulario. Publica un borrador para que sea la versión vigente; restaurar crea un borrador nuevo y nunca borra el historial."
         action={
           <div className="flex gap-2">
-            <Button>Comparar versiones</Button>
-            <Button variant="primary" disabled={isSaving} onClick={() => setIsSaving(true)}>
-              Guardar versión
+            <Button disabled={!canCompare || isComparing} onClick={() => setIsComparing(true)}>
+              Comparar versiones
             </Button>
+            {canEdit && history && (
+              <Button
+                variant="primary"
+                disabled={isBusy || Boolean(saveForm) || nothingToSave}
+                title={nothingToSave ? `No hay cambios desde ${versions[0].version}.` : undefined}
+                onClick={() => openSaveForm(history)}
+              >
+                Guardar versión
+              </Button>
+            )}
           </div>
         }
       />
@@ -122,6 +213,7 @@ function AppVersionHistory({ appId, plantillas, onSelectApp }: AppVersionHistory
           id="version-history-app"
           className="w-full rounded border border-line-2 bg-surface px-2 py-1.5 text-body-sm"
           value={appId}
+          disabled={isBusy}
           onChange={(event) => onSelectApp(event.target.value)}
         >
           {plantillas.map((plantilla) => (
@@ -132,39 +224,69 @@ function AppVersionHistory({ appId, plantillas, onSelectApp }: AppVersionHistory
         </select>
       </div>
 
-      {isSaving && <SaveVersionForm disabled={isBusy} onCancel={() => setIsSaving(false)} onSave={saveVersion} />}
-
-      {error && (
-        <div role="alert" className="mb-3 rounded-md border border-red-line bg-red-bg px-3 py-2 text-body-sm text-red">
-          {error}
+      {history && !canEdit && (
+        <p className="mb-3 text-body-sm text-muted">
+          Solo lectura: tu rol puede consultar y comparar el historial, pero no guardar, publicar ni restaurar
+          versiones.
+        </p>
+      )}
+      {canEdit && hasUnversionedChanges && versions.length > 0 && !saveForm && (
+        <div className="mb-3 rounded-md border border-amber-line bg-amber-bg px-3 py-2 text-body-sm text-amber">
+          El Designer tiene cambios que no están guardados en ninguna versión.
         </div>
       )}
+
+      {saveForm && (
+        <SaveVersionForm
+          initialText={saveForm.initialText}
+          disabled={isBusy}
+          onCancel={() => setSaveForm(undefined)}
+          onSave={saveVersion}
+        />
+      )}
+      {isComparing && canCompare && (
+        <CompareVersions
+          versions={versions}
+          hasUnversionedChanges={hasUnversionedChanges}
+          loadConfig={loadConfig}
+          onClose={() => setIsComparing(false)}
+        />
+      )}
+
+      {error && (
+        <Notice tone="error" onClose={() => setError(undefined)}>
+          {error}
+        </Notice>
+      )}
       {message && (
-        <div
-          role="status"
-          className="mb-3 rounded-md border border-green-line bg-green-bg px-3 py-2 text-body-sm text-green"
-        >
+        <Notice tone="success" onClose={() => setMessage(undefined)}>
           {message}
-        </div>
+        </Notice>
       )}
 
       <QueryState query={query}>
-        {(versions) =>
-          versions.length === 0 ? (
+        {({ versions: list, designer }) =>
+          list.length === 0 ? (
             <EmptyState
               title="Aún no hay versiones"
               description="Guarda la configuración actual para empezar el historial de cambios."
             />
           ) : (
             <div className="rounded-md border border-line bg-surface px-4">
-              {versions.map((version) => (
+              {list.map((version) => (
                 <VersionEntry
                   key={version.id}
                   version={version}
-                  detail={details[version.id]}
+                  detail={openDetails[version.id]}
+                  isLoadingDetail={loadingDetailId === version.id}
+                  inDesigner={designer.versionId === version.id}
+                  currentVersion={currentVersion}
+                  hasUnversionedChanges={designer.hasUnversionedChanges}
+                  canEdit={canEdit}
                   disabled={isBusy}
                   onView={toggleDetail}
                   onPublish={publishVersion}
+                  onDiscard={discardVersion}
                   onRestore={restoreVersion}
                 />
               ))}

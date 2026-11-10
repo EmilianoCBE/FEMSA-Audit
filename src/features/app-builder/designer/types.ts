@@ -9,7 +9,7 @@ export type FormField = {
   requirement: FieldRequirement;
 };
 
-/** Código del rol (ej. "auditor"). Los roles se administran en base de datos. */
+/** ID del rol de base de datos serializado como texto (ej. "2"). */
 export type RoleId = string;
 
 export type Role = {
@@ -19,7 +19,7 @@ export type Role = {
 
 export type PermissionLevel = "edit" | "read" | "hidden";
 
-/** Permisos de un campo del formulario para cada rol. */
+/** Permisos por módulo y rol. fieldId/fieldName identifican el módulo en la matriz. */
 export type FieldPermissions = {
   fieldId: string;
   fieldName: string;

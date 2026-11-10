@@ -1,7 +1,18 @@
+import { usePermissions } from "@/features/auth/permissions";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@/shared/hooks/useQuery";
-import { Button, ContentArea, QueryState, SectionToolbar, SegmentedControl, type SegmentedOption } from "@/shared/ui";
+import { useUnsavedChangesGuard } from "@/shared/hooks/useUnsavedChangesGuard";
+import {
+  Badge,
+  Button,
+  ContentArea,
+  QueryState,
+  SectionToolbar,
+  SegmentedControl,
+  type SegmentedOption,
+} from "@/shared/ui";
 import { applyDesignerChange, type DesignerChange, DesignerAssistantPanel, targetFieldId } from "../../assistant";
+import { type AppVersion, latestDraft, versionsService } from "../../version-history";
 import { designerService } from "../services/designerService";
 import type { ElementoDesigner, FormFieldType, PlantillaDesigner } from "../types";
 
@@ -102,6 +113,7 @@ const VISTAS_PANEL_DESIGNER: readonly SegmentedOption<VistaPanelDesigner>[] = [
 
 // TODO(US03 - Magda): conectar reordenamiento entre secciones si el equipo requiere persistir orden manual.
 export function FieldsPanel() {
+  const canEdit = usePermissions().permissions["app-builder"] === "edit";
   const queryPlantillasDesigner = useQuery(designerService.listPlantillasDesigner);
   const [plantillaDesignerActual, setPlantillaDesignerActual] = useState<PlantillaDesigner>();
   const [campoSeleccionadoDesignerId, setCampoSeleccionadoDesignerId] = useState<string>();
@@ -110,6 +122,28 @@ export function FieldsPanel() {
   const [estaGuardandoDesigner, setEstaGuardandoDesigner] = useState(false);
   const [tieneCambiosDesigner, setTieneCambiosDesigner] = useState(false);
   const [vistaPanelDesigner, setVistaPanelDesigner] = useState<VistaPanelDesigner>("campo");
+  // US11: al salir de Campos con cambios sin guardar se perderían (y "Guardar versión" no los incluiría).
+  const salidaDesigner = useUnsavedChangesGuard(tieneCambiosDesigner);
+  // US10 - Juan Aguilar: borrador sin publicar de la plantilla y si el editor muestra su configuración.
+  const [borradorDesigner, setBorradorDesigner] = useState<AppVersion>();
+  const [editandoBorradorDesigner, setEditandoBorradorDesigner] = useState(false);
+  const [guardandoBorradorDesigner, setGuardandoBorradorDesigner] = useState(false);
+
+  const plantillaDesignerId = plantillaDesignerActual?.id;
+  useEffect(() => {
+    setBorradorDesigner(undefined);
+    setEditandoBorradorDesigner(false);
+    if (!plantillaDesignerId) return;
+
+    const controller = new AbortController();
+    versionsService
+      .list(plantillaDesignerId, controller.signal)
+      .then(({ versions }) => setBorradorDesigner(latestDraft(versions)))
+      .catch(() => {
+        // Sin historial disponible el Designer sigue funcionando; solo no se ofrece reabrir el borrador.
+      });
+    return () => controller.abort();
+  }, [plantillaDesignerId]);
 
   useEffect(() => {
     if (!plantillaDesignerActual && queryPlantillasDesigner.data?.length) {
@@ -128,6 +162,7 @@ export function FieldsPanel() {
   );
 
   const actualizarElementosDesigner = (elementosActualizadosDesigner: ElementoDesigner[]) => {
+    if (!canEdit) return;
     setMensajeDesigner(undefined);
     setTieneCambiosDesigner(true);
     setPlantillaDesignerActual((plantillaDesigner) =>
@@ -207,6 +242,7 @@ export function FieldsPanel() {
   };
 
   const crearPlantillaDesigner = async () => {
+    if (!canEdit) return;
     setMensajeDesigner(undefined);
     setErrorDesigner(undefined);
     try {
@@ -235,14 +271,17 @@ export function FieldsPanel() {
       setPlantillaDesignerActual(plantillaDesigner);
       setCampoSeleccionadoDesignerId(plantillaDesigner.elements[0]?.id);
       setTieneCambiosDesigner(false);
+      setEditandoBorradorDesigner(false);
       setMensajeDesigner("Cambios descartados. Se recargo la plantilla");
     } catch (error) {
       setErrorDesigner(error instanceof Error ? error.message : "No se pudo recargar la plantilla");
     }
   };
 
+  /** Devuelve true si se guardó. */
   const guardarFormularioDesigner = async () => {
-    if (!plantillaDesignerActual) return;
+    if (!canEdit) return false;
+    if (!plantillaDesignerActual) return false;
 
     setEstaGuardandoDesigner(true);
     setMensajeDesigner(undefined);
@@ -254,11 +293,60 @@ export function FieldsPanel() {
       setPlantillaDesignerActual(plantillaGuardadaDesigner);
       setCampoSeleccionadoDesignerId(campoSeleccionadoDesigner?.id);
       setTieneCambiosDesigner(false);
+      setEditandoBorradorDesigner(false);
       setMensajeDesigner("Formulario guardado");
+      return true;
     } catch (error) {
       setErrorDesigner(error instanceof Error ? error.message : "No se pudo guardar el formulario.");
+      return false;
     } finally {
       setEstaGuardandoDesigner(false);
+    }
+  };
+
+  // US10.1: guarda el formulario como borrador; la versión vigente no cambia hasta publicarlo.
+  const guardarBorradorDesigner = async () => {
+    if (!plantillaDesignerActual) return;
+
+    setGuardandoBorradorDesigner(true);
+    setMensajeDesigner(undefined);
+    setErrorDesigner(undefined);
+    try {
+      const borradorGuardado = await versionsService.save(
+        plantillaDesignerActual.id,
+        { elements: plantillaDesignerActual.elements },
+        ["Borrador guardado desde el Designer"],
+      );
+      setBorradorDesigner(borradorGuardado);
+      setEditandoBorradorDesigner(true);
+      setTieneCambiosDesigner(false);
+      setMensajeDesigner(`Se guardó ${borradorGuardado.version} como borrador. La versión vigente no cambia.`);
+    } catch (error) {
+      setErrorDesigner(error instanceof Error ? error.message : "No se pudo guardar el borrador.");
+    } finally {
+      setGuardandoBorradorDesigner(false);
+    }
+  };
+
+  // US10.2: reabre el borrador más reciente con la configuración que se guardó.
+  const abrirBorradorDesigner = async () => {
+    if (!plantillaDesignerActual || !borradorDesigner) return;
+
+    setMensajeDesigner(undefined);
+    setErrorDesigner(undefined);
+    try {
+      const detalleBorrador = await versionsService.get(plantillaDesignerActual.id, borradorDesigner.id);
+      const plantillaBorrador = normalizarPlantillaDesigner({
+        ...plantillaDesignerActual,
+        elements: detalleBorrador.config.elements ?? [],
+      });
+      setPlantillaDesignerActual(plantillaBorrador);
+      setCampoSeleccionadoDesignerId(plantillaBorrador.elements[0]?.id);
+      setTieneCambiosDesigner(false);
+      setEditandoBorradorDesigner(true);
+      setMensajeDesigner(`Se abrió el borrador ${borradorDesigner.version}.`);
+    } catch (error) {
+      setErrorDesigner(error instanceof Error ? error.message : "No se pudo abrir el borrador.");
     }
   };
 
@@ -275,11 +363,43 @@ export function FieldsPanel() {
           </div>
         }
         action={
-          <Button variant="primary" onClick={crearPlantillaDesigner}>
+          <Button variant="primary" disabled={!canEdit} onClick={crearPlantillaDesigner}>
             Nueva plantilla
           </Button>
         }
       />
+
+      {salidaDesigner.state === "blocked" && (
+        <div
+          role="alertdialog"
+          aria-label="Cambios sin guardar"
+          className="mb-3 flex flex-wrap items-center gap-2 rounded-md border border-amber-line bg-amber-bg px-3 py-2 text-body-sm text-amber"
+        >
+          <span className="min-w-0 flex-1">
+            Tienes cambios sin guardar en el formulario. Si sales ahora se perderán y no se incluirán al guardar una
+            versión.
+          </span>
+          <div className="flex flex-wrap gap-1.5">
+            <Button size="sm" onClick={() => salidaDesigner.reset()}>
+              Seguir editando
+            </Button>
+            <Button size="sm" onClick={() => salidaDesigner.proceed()}>
+              Salir sin guardar
+            </Button>
+            <Button
+              size="sm"
+              variant="primary"
+              disabled={estaGuardandoDesigner}
+              onClick={async () => {
+                if (await guardarFormularioDesigner()) salidaDesigner.proceed();
+                else salidaDesigner.reset();
+              }}
+            >
+              Guardar y salir
+            </Button>
+          </div>
+        </div>
+      )}
 
       <QueryState query={queryPlantillasDesigner}>
         {(plantillasDesigner) => (
@@ -303,19 +423,30 @@ export function FieldsPanel() {
                 </select>
               </div>
 
-              <PaletaDesigner
-                grupoDesigner="basicos"
-                tituloDesigner="Campos basicos"
-                onAgregarDesigner={agregarCampoDesigner}
-              />
-              <PaletaDesigner
-                grupoDesigner="avanzados"
-                tituloDesigner="Avanzados"
-                onAgregarDesigner={agregarCampoDesigner}
-              />
+              <fieldset disabled={!canEdit}>
+                <legend className="sr-only">Agregar campos</legend>
+                <PaletaDesigner
+                  grupoDesigner="basicos"
+                  tituloDesigner="Campos basicos"
+                  onAgregarDesigner={agregarCampoDesigner}
+                />
+                <PaletaDesigner
+                  grupoDesigner="avanzados"
+                  tituloDesigner="Avanzados"
+                  onAgregarDesigner={agregarCampoDesigner}
+                />
+              </fieldset>
             </aside>
 
             <main className="min-h-[680px] p-6">
+              {borradorDesigner && (
+                <AvisoBorradorDesigner
+                  borradorDesigner={borradorDesigner}
+                  editandoBorradorDesigner={editandoBorradorDesigner}
+                  tieneCambiosDesigner={tieneCambiosDesigner}
+                  onAbrirBorradorDesigner={abrirBorradorDesigner}
+                />
+              )}
               {errorDesigner && (
                 <div
                   role="alert"
@@ -358,6 +489,7 @@ export function FieldsPanel() {
                       <button
                         type="button"
                         className="w-full rounded-md border border-dashed border-line-2 px-3 py-2 text-body-sm text-muted hover:border-accent hover:text-accent"
+                        disabled={!canEdit}
                         onClick={() => agregarCampoDesigner("short-text", seccionDesigner.id)}
                       >
                         + Agregar campo
@@ -375,27 +507,31 @@ export function FieldsPanel() {
                 value={vistaPanelDesigner}
                 onValueChange={setVistaPanelDesigner}
               />
-              {vistaPanelDesigner === "asistente" && plantillaDesignerActual ? (
-                <DesignerAssistantPanel
-                  appId={plantillaDesignerActual.id}
-                  elements={elementosDesigner}
-                  hasUnsavedChanges={tieneCambiosDesigner}
-                  onApplyChange={aplicarCambioAsistente}
-                  onFocusField={(campoDesignerId) => {
-                    setCampoSeleccionadoDesignerId(campoDesignerId);
-                    setVistaPanelDesigner("campo");
-                  }}
-                />
-              ) : (
-                <PanelConfiguracionDesigner
-                  campoDesigner={campoSeleccionadoDesigner}
-                  onActualizarDesigner={actualizarCampoDesigner}
-                  onGuardarDesigner={guardarFormularioDesigner}
-                  onDescartarDesigner={recargarPlantillaDesigner}
-                  guardandoDesigner={estaGuardandoDesigner}
-                  tieneCambiosDesigner={tieneCambiosDesigner}
-                />
-              )}
+              <fieldset disabled={!canEdit}>
+                <legend className="sr-only">Configuración del campo</legend>
+                {vistaPanelDesigner === "asistente" && plantillaDesignerActual ? (
+                  <DesignerAssistantPanel
+                    appId={plantillaDesignerActual.id}
+                    elements={elementosDesigner}
+                    hasUnsavedChanges={tieneCambiosDesigner}
+                    onApplyChange={aplicarCambioAsistente}
+                    onFocusField={(campoDesignerId) => {
+                      setCampoSeleccionadoDesignerId(campoDesignerId);
+                      setVistaPanelDesigner("campo");
+                    }}
+                  />
+                ) : (
+                  <PanelConfiguracionDesigner
+                    campoDesigner={campoSeleccionadoDesigner}
+                    onActualizarDesigner={actualizarCampoDesigner}
+                    onGuardarDesigner={guardarFormularioDesigner}
+                    onGuardarBorradorDesigner={guardarBorradorDesigner}
+                    onDescartarDesigner={recargarPlantillaDesigner}
+                    guardandoDesigner={estaGuardandoDesigner || guardandoBorradorDesigner}
+                    tieneCambiosDesigner={tieneCambiosDesigner}
+                  />
+                )}
+              </fieldset>
             </aside>
           </div>
         )}
@@ -478,6 +614,7 @@ function PanelConfiguracionDesigner({
   campoDesigner,
   onActualizarDesigner,
   onGuardarDesigner,
+  onGuardarBorradorDesigner,
   onDescartarDesigner,
   guardandoDesigner,
   tieneCambiosDesigner,
@@ -485,6 +622,7 @@ function PanelConfiguracionDesigner({
   campoDesigner?: ElementoDesigner;
   onActualizarDesigner: (campoDesignerId: string, cambiosDesigner: Partial<ElementoDesigner>) => void;
   onGuardarDesigner: () => void;
+  onGuardarBorradorDesigner: () => void;
   onDescartarDesigner: () => void;
   guardandoDesigner: boolean;
   tieneCambiosDesigner: boolean;
@@ -591,6 +729,9 @@ function PanelConfiguracionDesigner({
         <Button variant="primary" onClick={onGuardarDesigner} disabled={guardandoDesigner}>
           {guardandoDesigner ? "Guardando..." : "Guardar"}
         </Button>
+        <Button onClick={onGuardarBorradorDesigner} disabled={guardandoDesigner}>
+          Guardar borrador
+        </Button>
         <Button onClick={onDescartarDesigner} disabled={guardandoDesigner || !tieneCambiosDesigner}>
           Descartar
         </Button>
@@ -623,6 +764,39 @@ function ToggleDesigner({
         onChange={(event) => onChangeDesigner(event.target.checked)}
       />
     </label>
+  );
+}
+
+// US10.3/US10.4: indica que el editor muestra un borrador sin publicar y permite reabrirlo.
+function AvisoBorradorDesigner({
+  borradorDesigner,
+  editandoBorradorDesigner,
+  tieneCambiosDesigner,
+  onAbrirBorradorDesigner,
+}: {
+  borradorDesigner: AppVersion;
+  editandoBorradorDesigner: boolean;
+  tieneCambiosDesigner: boolean;
+  onAbrirBorradorDesigner: () => void;
+}) {
+  return (
+    <div className="mb-4 flex flex-wrap items-center gap-3 rounded-md border border-amber-line bg-amber-bg px-3 py-2 text-body-sm text-ink-2">
+      <Badge tone="amber">Borrador · {borradorDesigner.version}</Badge>
+      <p className="min-w-0 flex-1">
+        {editandoBorradorDesigner
+          ? "Estás editando un borrador sin publicar. La versión vigente no cambia hasta publicarlo en Historial de versiones."
+          : "Hay un borrador sin publicar de esta plantilla."}
+      </p>
+      {!editandoBorradorDesigner && (
+        <Button
+          onClick={onAbrirBorradorDesigner}
+          disabled={tieneCambiosDesigner}
+          title={tieneCambiosDesigner ? "Guarda o descarta tus cambios antes de abrir el borrador" : undefined}
+        >
+          Abrir borrador
+        </Button>
+      )}
+    </div>
   );
 }
 
