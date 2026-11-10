@@ -5,6 +5,8 @@ import { Button, ContentArea, EmptyState, QueryState, SectionToolbar } from "@/s
 import { designerService } from "../../designer/services/designerService";
 import type { PlantillaDesigner } from "../../designer/types";
 import { diffConfigs, suggestChanges } from "../lib/compareVersions";
+import { runningProcessesNotice } from "../../workflow/processes/processes";
+import { processService } from "../../workflow/processes/processService";
 import { versionsService } from "../services/versionsService";
 import type { AppConfig, AppVersion, AppVersionDetail, VersionHistory } from "../types";
 import { CompareVersions, DESIGNER_OPTION } from "./CompareVersions";
@@ -76,6 +78,8 @@ function AppVersionHistory({ appId, plantillas, onSelectApp }: AppVersionHistory
   const canEditModule = usePermissions().permissions["app-builder"] === "edit";
   const listVersions = useCallback((signal: AbortSignal) => versionsService.list(appId, signal), [appId]);
   const query = useQuery(listVersions);
+  // Workflow fase 4: procesos en curso por versión, para avisar al publicar que siguen con la suya.
+  const running = useQuery(useCallback((signal: AbortSignal) => processService.summary(appId, signal), [appId]));
   // Las versiones no cambian una vez guardadas: su detalle se pide una sola vez.
   const detailsCache = useRef(new Map<string, AppVersionDetail>());
   const [openDetails, setOpenDetails] = useState<Record<string, AppVersionDetail>>({});
@@ -297,6 +301,7 @@ function AppVersionHistory({ appId, plantillas, onSelectApp }: AppVersionHistory
                   onPublish={publishVersion}
                   onDiscard={discardVersion}
                   onRestore={restoreVersion}
+                  publishNotice={(version) => runningProcessesNotice(running.data ?? [], version.version)}
                 />
               ))}
             </div>
