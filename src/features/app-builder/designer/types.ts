@@ -1,3 +1,4 @@
+import type { StoredWorkflow } from "../workflow/types";
 export type FormFieldType = "short-text" | "long-text" | "catalog" | "calculated" | "date";
 
 export type FieldRequirement = "required" | "optional" | "automatic";
@@ -63,6 +64,8 @@ export type PlantillaDesigner = {
   id: string;
   name: string;
   elements: ElementoDesigner[];
+  /** Flujo del proceso del formulario; null o ausente = todavía no se guarda uno (se usa la plantilla base). */
+  workflow?: StoredWorkflow | null;
   createdAt: string;
   updatedAt: string;
 };

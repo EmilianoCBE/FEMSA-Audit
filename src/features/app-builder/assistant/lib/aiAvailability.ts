@@ -27,10 +27,10 @@ export function aiUnavailableMessage(reason: AiUnavailableReason | null | undefi
 }
 
 /** Mensaje cuando ni siquiera respondió el asistente (servidor caído, sin red o el navegador dejó de esperar). */
-export function assistantErrorMessage(error: unknown): string {
+export function assistantErrorMessage(error: unknown, subject = "el formulario"): string {
   const timedOut = error instanceof DOMException && error.name === "TimeoutError";
   const cause = timedOut
     ? "El asistente tardó demasiado en responder."
     : "El asistente no está disponible en este momento.";
-  return `${cause} Puedes seguir editando el formulario manualmente.`;
+  return `${cause} Puedes seguir editando ${subject} manualmente.`;
 }

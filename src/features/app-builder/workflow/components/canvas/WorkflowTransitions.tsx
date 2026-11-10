@@ -34,9 +34,13 @@ const VARIANT_STYLES: Record<TransitionVariant, VariantStyle> = {
 
 const VARIANTS = Object.keys(VARIANT_STYLES) as TransitionVariant[];
 
-type WorkflowTransitionsProps = Pick<WorkflowDiagram, "size" | "transitions">;
+type WorkflowTransitionsProps = Pick<WorkflowDiagram, "size" | "transitions"> & {
+  /** Fase 2: la transición elegida se resalta; con `onSelect` se puede elegir con un clic. */
+  selectedId?: string;
+  onSelect?: (id: string) => void;
+};
 
-export function WorkflowTransitions({ size, transitions }: WorkflowTransitionsProps) {
+export function WorkflowTransitions({ size, transitions, selectedId, onSelect }: WorkflowTransitionsProps) {
   const markerPrefix = useId();
   const markerId = (variant: TransitionVariant) => `${markerPrefix}-arrow-${variant}`;
 
@@ -71,20 +75,34 @@ export function WorkflowTransitions({ size, transitions }: WorkflowTransitionsPr
         ))}
       </defs>
       {transitions.map((transition) => {
-        const style = VARIANT_STYLES[transition.variant];
+        const selected = transition.id === selectedId;
+        const variant = selected ? "active" : transition.variant;
+        const style = VARIANT_STYLES[variant];
+        const select = onSelect && transition.variant !== "suggested" ? () => onSelect(transition.id) : undefined;
         return (
-          <g key={transition.id}>
+          <g
+            key={transition.id}
+            data-transition={transition.id}
+            className={cn(select && "pointer-events-auto cursor-pointer")}
+            onPointerDown={select && ((event) => event.stopPropagation())}
+            onClick={select}
+          >
+            {/* Área de clic más ancha que la línea (invisible). */}
+            {select && <path d={transition.path} fill="none" stroke="transparent" strokeWidth={12} />}
             <path
               d={transition.path}
               fill="none"
-              className={style.path}
-              markerEnd={`url(#${markerId(transition.variant)})`}
+              className={cn(style.path, selected && "[stroke-width:2.4]")}
+              markerEnd={`url(#${markerId(variant)})`}
             />
             <text
               x={transition.labelPosition.x}
               y={transition.labelPosition.y}
               textAnchor={transition.labelAnchor ?? "start"}
-              className={cn("font-sans text-caption", style.label)}
+              className={cn(
+                "font-sans text-caption stroke-surface [stroke-width:3px] [paint-order:stroke]",
+                style.label,
+              )}
             >
               {transition.label}
             </text>
