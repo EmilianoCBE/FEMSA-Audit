@@ -1,3 +1,4 @@
+import type { StoredWorkflow } from "../../workflow/types";
 import { httpClient } from "@/shared/api/httpClient";
 import { formFieldsMock, validationRulesMock } from "../data/designer.mock";
 import type {
@@ -44,6 +45,15 @@ export const designerService = {
     const response = await httpClient.put<PlantillaDesignerResponse>(
       `/designer/layouts/${encodeURIComponent(plantillaDesignerId)}/canvas`,
       { elements },
+    );
+    return response.layout;
+  },
+
+  /** Fase 1 del workflow: guarda el flujo del proceso del formulario (se versiona con "Guardar versión"). */
+  saveWorkflowDesigner: async (plantillaDesignerId: string, workflow: StoredWorkflow): Promise<PlantillaDesigner> => {
+    const response = await httpClient.put<PlantillaDesignerResponse>(
+      `/designer/layouts/${encodeURIComponent(plantillaDesignerId)}/workflow`,
+      { workflow },
     );
     return response.layout;
   },
