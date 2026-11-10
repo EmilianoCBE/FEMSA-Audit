@@ -1,10 +1,16 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useId, useMemo, useRef, useState } from "react";
+import { Link } from "react-router";
 import { ChevronDown, Maximize2, X } from "lucide-react";
 import { cn } from "@/shared/lib/cn";
 import { Eyebrow } from "@/shared/ui";
 import { VersionStatusBadge } from "../../version-history/components/VersionStatusBadge";
 import { versionsMock } from "../../version-history/data/versions.mock";
-import { findingLifecycleMock, workflowRulesMock } from "../data/workflow.mock";
+import { useQuery } from "@/shared/hooks/useQuery";
+import { useCurrentDesignerLayout } from "../../designer/lib/currentLayout";
+import { designerService } from "../../designer/services/designerService";
+import { workflowRulesMock } from "../data/workflow.mock";
+import { fromStoredWorkflow } from "../lib/workflowStorage";
+import type { WorkflowDiagram } from "../types";
 import {
   getActiveRules,
   getBranches,
@@ -22,13 +28,23 @@ const STORAGE_KEY = "femsa-audit:embedded-workflow-expanded";
 /** Escala de la miniatura de la esquina */
 const MINI_SCALE = 0.35;
 
-/** Datos del mock */
-const flowConfigured = hasFlow(findingLifecycleMock);
-const referenceDiagram = getReferenceDiagram(findingLifecycleMock);
-const branches = getBranches(findingLifecycleMock);
-const sequenceSummary = getSequenceSummary(findingLifecycleMock);
+/** Lo que muestra el panel, calculado a partir del flujo del formulario. */
+function buildProcessModel(diagram: WorkflowDiagram) {
+  return {
+    flowConfigured: hasFlow(diagram),
+    referenceDiagram: getReferenceDiagram(diagram),
+    branches: getBranches(diagram),
+    sequenceSummary: getSequenceSummary(diagram),
+    // Las reglas siguen siendo de ejemplo hasta que la pestaña Reglas se guarde.
+    activeRules: getActiveRules(diagram, workflowRulesMock),
+  };
+}
+
+type ProcessModel = ReturnType<typeof buildProcessModel>;
+const ProcessModelContext = createContext<ProcessModel>(buildProcessModel(fromStoredWorkflow(null)));
+const useProcessModel = () => useContext(ProcessModelContext);
+
 const sampleVersion = versionsMock.find((version) => version.status === "draft") ?? versionsMock[0];
-const activeRules = getActiveRules(findingLifecycleMock, workflowRulesMock);
 
 /** Leer y guardar estado del panel */
 function readExpanded() {
@@ -49,6 +65,7 @@ function saveExpanded(expanded: boolean) {
 
 /** Diagrama de solo lectura */
 function ReferenceDiagram() {
+  const { referenceDiagram, sequenceSummary } = useProcessModel();
   return (
     <div
       role="img"
@@ -75,7 +92,8 @@ function VersionLabel() {
 }
 
 /** Diagrama (o aviso si no hay flujo), desvíos y reglas */
-function ProcessContent() {
+function ProcessContent({ layoutId }: { layoutId?: string }) {
+  const { flowConfigured, branches, activeRules } = useProcessModel();
   return (
     <>
       {flowConfigured ? (
@@ -86,6 +104,16 @@ function ProcessContent() {
         <p className="px-3.5 py-6 text-center text-body-sm text-muted">
           Este formulario aún no tiene un flujo configurado.
         </p>
+      )}
+      {layoutId && (
+        <div className="border-t border-line-soft px-3.5 py-2 text-right">
+          <Link
+            to={`/app-builder/workflow/flow?layout=${encodeURIComponent(layoutId)}`}
+            className="text-label font-medium text-accent hover:underline"
+          >
+            Editar el flujo de este formulario
+          </Link>
+        </div>
       )}
       {/* Desvíos y reglas lado a lado (apilados en pantallas chicas) */}
       {(branches.length > 0 || activeRules.length > 0) && (
@@ -128,6 +156,7 @@ function ProcessContent() {
 
 /** Miniatura en la esquina inferior derecha (arriba tapaba el panel derecho del Designer); al picarle abre el flujo en grande */
 function WorkflowMiniature({ onOpen }: { onOpen: () => void }) {
+  const { flowConfigured, referenceDiagram } = useProcessModel();
   return (
     // Entra con fade y un deslizamiento corto (sin animación si el sistema pide movimiento reducido)
     <div className="fixed right-4 bottom-4 z-20 rounded-md border border-accent-line bg-surface p-2.5 shadow-lg transition duration-200 ease-out hover:border-accent starting:translate-y-2 starting:opacity-0 motion-reduce:transition-none">
@@ -166,6 +195,15 @@ function WorkflowMiniature({ onOpen }: { onOpen: () => void }) {
 
 /** Panel del flujo del proceso (US05) */
 export function EmbeddedWorkflowPanel() {
+  // Fase 2: el flujo guardado del formulario abierto en el Designer (o el primero); sin flujo, la plantilla base.
+  const selectedId = useCurrentDesignerLayout();
+  const { data: layouts } = useQuery(
+    useCallback((signal: AbortSignal) => designerService.listPlantillasDesigner(signal), []),
+  );
+  const layout = layouts?.find((item) => item.id === selectedId) ?? layouts?.[0];
+  const workflow = layout?.workflow;
+  const model = useMemo(() => buildProcessModel(fromStoredWorkflow(workflow)), [workflow]);
+  const { flowConfigured, branches, activeRules, sequenceSummary } = model;
   const [expanded, setExpanded] = useState(readExpanded);
   const [scrolledPast, setScrolledPast] = useState(false);
   const contentId = useId();
@@ -196,62 +234,64 @@ export function EmbeddedWorkflowPanel() {
   }
 
   return (
-    <div className="px-4 pt-5 desktop:px-6">
-      <section ref={panelRef} className="rounded-md border border-line bg-surface">
-        {/* Barra */}
-        <div className="flex items-center gap-2 px-3.5 py-2">
-          <Eyebrow size="sm" className="flex-none">
-            Flujo del proceso
-          </Eyebrow>
-          {!expanded && (
-            <p className="min-w-0 truncate text-meta text-muted">
-              {flowConfigured ? sequenceSummary : "Sin flujo configurado"}
-              {branches.length > 0 && ` · ${branches.length} ${branches.length === 1 ? "desvío" : "desvíos"}`}
-              {activeRules.length > 0 && ` · ${activeRules.length} ${activeRules.length === 1 ? "regla" : "reglas"}`}
-            </p>
-          )}
-          <VersionLabel />
-          <button
-            type="button"
-            aria-expanded={expanded}
-            aria-controls={contentId}
-            aria-label={expanded ? "Minimizar flujo del proceso" : "Expandir flujo del proceso"}
-            title={expanded ? "Minimizar" : "Expandir"}
-            onClick={toggle}
-            className="flex-none rounded p-1 text-muted hover:bg-bg hover:text-ink-2"
-          >
-            <ChevronDown className={cn("size-3.5 transition-transform", !expanded && "-rotate-90")} />
-          </button>
-        </div>
-        <div id={contentId} hidden={!expanded} className="border-t border-line">
-          <ProcessContent />
-        </div>
-      </section>
+    <ProcessModelContext.Provider value={model}>
+      <div className="px-4 pt-5 desktop:px-6">
+        <section ref={panelRef} className="rounded-md border border-line bg-surface">
+          {/* Barra */}
+          <div className="flex items-center gap-2 px-3.5 py-2">
+            <Eyebrow size="sm" className="flex-none">
+              Flujo del proceso
+            </Eyebrow>
+            {!expanded && (
+              <p className="min-w-0 truncate text-meta text-muted">
+                {flowConfigured ? sequenceSummary : "Sin flujo configurado"}
+                {branches.length > 0 && ` · ${branches.length} ${branches.length === 1 ? "desvío" : "desvíos"}`}
+                {activeRules.length > 0 && ` · ${activeRules.length} ${activeRules.length === 1 ? "regla" : "reglas"}`}
+              </p>
+            )}
+            <VersionLabel />
+            <button
+              type="button"
+              aria-expanded={expanded}
+              aria-controls={contentId}
+              aria-label={expanded ? "Minimizar flujo del proceso" : "Expandir flujo del proceso"}
+              title={expanded ? "Minimizar" : "Expandir"}
+              onClick={toggle}
+              className="flex-none rounded p-1 text-muted hover:bg-bg hover:text-ink-2"
+            >
+              <ChevronDown className={cn("size-3.5 transition-transform", !expanded && "-rotate-90")} />
+            </button>
+          </div>
+          <div id={contentId} hidden={!expanded} className="border-t border-line">
+            <ProcessContent layoutId={layout?.id} />
+          </div>
+        </section>
 
-      {scrolledPast && <WorkflowMiniature onOpen={() => dialogRef.current?.showModal()} />}
+        {scrolledPast && <WorkflowMiniature onOpen={() => dialogRef.current?.showModal()} />}
 
-      {/* Flujo en grande sin salir de donde va el usuario (Esc o clic fuera lo cierra) */}
-      <dialog
-        ref={dialogRef}
-        aria-label="Flujo del proceso"
-        onClick={(event) => event.target === dialogRef.current && dialogRef.current.close()}
-        className="m-auto w-[min(1080px,calc(100vw-32px))] rounded-md border border-line bg-surface p-0 backdrop:bg-ink/40"
-      >
-        <div className="flex items-center gap-2 border-b border-line px-3.5 py-2">
-          <Eyebrow size="sm">Flujo del proceso</Eyebrow>
-          <VersionLabel />
-          <button
-            type="button"
-            aria-label="Cerrar flujo del proceso"
-            title="Cerrar"
-            onClick={() => dialogRef.current?.close()}
-            className="flex-none rounded p-1 text-muted hover:bg-bg hover:text-ink-2"
-          >
-            <X className="size-3.5" />
-          </button>
-        </div>
-        <ProcessContent />
-      </dialog>
-    </div>
+        {/* Flujo en grande sin salir de donde va el usuario (Esc o clic fuera lo cierra) */}
+        <dialog
+          ref={dialogRef}
+          aria-label="Flujo del proceso"
+          onClick={(event) => event.target === dialogRef.current && dialogRef.current.close()}
+          className="m-auto w-[min(1080px,calc(100vw-32px))] rounded-md border border-line bg-surface p-0 backdrop:bg-ink/40"
+        >
+          <div className="flex items-center gap-2 border-b border-line px-3.5 py-2">
+            <Eyebrow size="sm">Flujo del proceso</Eyebrow>
+            <VersionLabel />
+            <button
+              type="button"
+              aria-label="Cerrar flujo del proceso"
+              title="Cerrar"
+              onClick={() => dialogRef.current?.close()}
+              className="flex-none rounded p-1 text-muted hover:bg-bg hover:text-ink-2"
+            >
+              <X className="size-3.5" />
+            </button>
+          </div>
+          <ProcessContent layoutId={layout?.id} />
+        </dialog>
+      </div>
+    </ProcessModelContext.Provider>
   );
 }

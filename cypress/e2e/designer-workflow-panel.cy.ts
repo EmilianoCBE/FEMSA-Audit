@@ -53,4 +53,32 @@ describe("Flujo del proceso en el Designer (US05)", () => {
     cy.get("dialog[aria-label='Flujo del proceso']").should("not.be.visible");
     cy.location("pathname").should("eq", "/app-builder/designer/fields");
   });
+
+  it("muestra el flujo guardado del formulario y lleva a editarlo en el Workflow", () => {
+    const workflow = {
+      size: { width: 600, height: 200 },
+      states: [
+        { id: "borrador", kind: "Inicial", name: "Captura", tone: "neutral", position: { x: 22, y: 20 } },
+        { id: "cerrado", kind: "Final", name: "Archivado", tone: "green", position: { x: 300, y: 20 } },
+      ],
+      transitions: [
+        { id: "t", label: "archivar", from: "borrador", to: "cerrado", role: "Jefe de Auditoría", variant: "default" },
+      ],
+      suggestedStates: [],
+      annotations: [],
+    };
+    cy.intercept("GET", "/api/designer/layouts", {
+      layouts: [{ id: "visitas", name: "Formulario de visitas", elements: [], workflow }],
+    });
+    cy.intercept("GET", "/api/designer/layouts/visitas", {
+      layout: { id: "visitas", name: "Formulario de visitas", elements: [], workflow },
+    });
+    cy.visit("/app-builder/designer/fields");
+    cy.contains("Captura → Archivado");
+    cy.get("button[aria-label='Expandir flujo del proceso']").click();
+    cy.contains("a", "Editar el flujo de este formulario").click();
+    cy.location("pathname").should("eq", "/app-builder/workflow/flow");
+    cy.location("search").should("eq", "?layout=visitas");
+    cy.get("[role=button][aria-label='Estado Archivado (Final)']");
+  });
 });

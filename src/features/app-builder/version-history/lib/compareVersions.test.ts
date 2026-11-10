@@ -1,3 +1,4 @@
+import { DEFAULT_WORKFLOW } from "../../workflow/lib/workflowStorage";
 import { describe, expect, it } from "vitest";
 import type { ElementoDesigner } from "../../designer/types";
 import { diffConfigs, isEmptyDiff, suggestChanges } from "./compareVersions";
@@ -30,6 +31,7 @@ describe("diffConfigs", () => {
           ],
         },
       ],
+      workflow: [],
     });
   });
 
@@ -51,5 +53,12 @@ describe("suggestChanges", () => {
       "Se quitó el campo Notas",
       "Se modificó el campo Título (obligatorio)",
     ]);
+  });
+
+  it("incluye los cambios del flujo del proceso", () => {
+    const diff = diffConfigs({ elements: [], workflow: null }, { elements: [], workflow: DEFAULT_WORKFLOW });
+    expect(diff.workflow).toEqual(["Se guardó el flujo del proceso"]);
+    expect(isEmptyDiff(diff)).toBe(false);
+    expect(suggestChanges(diff)).toEqual(["Se guardó el flujo del proceso"]);
   });
 });

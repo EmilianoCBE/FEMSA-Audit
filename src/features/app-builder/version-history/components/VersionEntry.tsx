@@ -25,6 +25,8 @@ type VersionEntryProps = {
   onPublish?: (version: AppVersion) => void;
   onDiscard?: (version: AppVersion) => void;
   onRestore?: (version: AppVersion, options: { publish: boolean }) => void;
+  /** Workflow fase 4: aviso de procesos en curso que seguirán con su versión al publicar esta. */
+  publishNotice?: (version: AppVersion) => string | null;
 };
 
 function ConfirmBox({ label, children, actions }: { label: string; children: ReactNode; actions: ReactNode }) {
@@ -52,6 +54,7 @@ export function VersionEntry({
   onPublish,
   onDiscard,
   onRestore,
+  publishNotice,
 }: VersionEntryProps) {
   const [pending, setPending] = useState<PendingAction>();
   const fields = detail ? describeFields(detail.config) : [];
@@ -133,6 +136,7 @@ export function VersionEntry({
           >
             {version.version} será la versión vigente
             {currentVersion ? ` y ${currentVersion} pasará a Archivada.` : "."}
+            {publishNotice?.(version) && <span className="mt-1 block text-amber">{publishNotice(version)}</span>}
           </ConfirmBox>
         )}
         {pending === "discard" && onDiscard && (

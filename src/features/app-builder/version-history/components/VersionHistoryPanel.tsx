@@ -5,6 +5,8 @@ import { Button, ContentArea, EmptyState, QueryState, SectionToolbar } from "@/s
 import { designerService } from "../../designer/services/designerService";
 import type { PlantillaDesigner } from "../../designer/types";
 import { diffConfigs, suggestChanges } from "../lib/compareVersions";
+import { runningProcessesNotice } from "../../workflow/processes/processes";
+import { processService } from "../../workflow/processes/processService";
 import { versionsService } from "../services/versionsService";
 import type { AppConfig, AppVersion, AppVersionDetail, VersionHistory } from "../types";
 import { CompareVersions, DESIGNER_OPTION } from "./CompareVersions";
@@ -44,6 +46,12 @@ type AppVersionHistoryProps = {
   onSelectApp: (appId: string) => void;
 };
 
+/** Lo que el Designer tiene ahora (campos y flujo del proceso), con la misma forma que el config de una versión. */
+async function designerConfig(appId: string): Promise<AppConfig> {
+  const plantilla = await designerService.getPlantillaDesigner(appId);
+  return { elements: plantilla.elements, workflow: plantilla.workflow ?? null };
+}
+
 function Notice({ tone, children, onClose }: { tone: "error" | "success"; children: string; onClose: () => void }) {
   const styles = tone === "error" ? "border-red-line bg-red-bg text-red" : "border-green-line bg-green-bg text-green";
   return (
@@ -70,6 +78,8 @@ function AppVersionHistory({ appId, plantillas, onSelectApp }: AppVersionHistory
   const canEditModule = usePermissions().permissions["app-builder"] === "edit";
   const listVersions = useCallback((signal: AbortSignal) => versionsService.list(appId, signal), [appId]);
   const query = useQuery(listVersions);
+  // Workflow fase 4: procesos en curso por versión, para avisar al publicar que siguen con la suya.
+  const running = useQuery(useCallback((signal: AbortSignal) => processService.summary(appId, signal), [appId]));
   // Las versiones no cambian una vez guardadas: su detalle se pide una sola vez.
   const detailsCache = useRef(new Map<string, AppVersionDetail>());
   const [openDetails, setOpenDetails] = useState<Record<string, AppVersionDetail>>({});
@@ -93,9 +103,7 @@ function AppVersionHistory({ appId, plantillas, onSelectApp }: AppVersionHistory
 
   const loadConfig = useCallback(
     async (id: string): Promise<AppConfig> =>
-      id === DESIGNER_OPTION
-        ? { elements: (await designerService.getPlantillaDesigner(appId)).elements }
-        : (await loadDetail(id)).config,
+      id === DESIGNER_OPTION ? await designerConfig(appId) : (await loadDetail(id)).config,
     [appId, loadDetail],
   );
 
@@ -120,7 +128,12 @@ function AppVersionHistory({ appId, plantillas, onSelectApp }: AppVersionHistory
       const [latest] = history.versions;
       const plantilla = await designerService.getPlantillaDesigner(appId);
       const suggestions = latest
-        ? suggestChanges(diffConfigs(await loadConfig(latest.id), { elements: plantilla.elements }))
+        ? suggestChanges(
+            diffConfigs(await loadConfig(latest.id), {
+              elements: plantilla.elements,
+              workflow: plantilla.workflow ?? null,
+            }),
+          )
         : ["Versión inicial"];
       setSaveForm({ initialText: suggestions.join("\n") });
       return undefined;
@@ -288,6 +301,7 @@ function AppVersionHistory({ appId, plantillas, onSelectApp }: AppVersionHistory
                   onPublish={publishVersion}
                   onDiscard={discardVersion}
                   onRestore={restoreVersion}
+                  publishNotice={(version) => runningProcessesNotice(running.data ?? [], version.version)}
                 />
               ))}
             </div>

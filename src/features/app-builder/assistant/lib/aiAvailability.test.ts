@@ -27,5 +27,8 @@ describe("US18 mensajes cuando la IA no está disponible", () => {
     expect(assistantErrorMessage(new DOMException("", "TimeoutError"))).toMatch(/^El asistente tardó demasiado/);
     expect(assistantErrorMessage(new Error("500"))).toMatch(/^El asistente no está disponible/);
     expect(assistantErrorMessage(new Error("500"))).toContain("Puedes seguir editando el formulario manualmente.");
+    expect(assistantErrorMessage(new Error("500"), "el flujo")).toContain(
+      "Puedes seguir editando el flujo manualmente.",
+    );
   });
 });

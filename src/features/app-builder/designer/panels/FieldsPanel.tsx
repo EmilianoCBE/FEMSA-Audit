@@ -1,4 +1,5 @@
 import { usePermissions } from "@/features/auth/permissions";
+import { setCurrentDesignerLayout } from "../lib/currentLayout";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@/shared/hooks/useQuery";
 import { useUnsavedChangesGuard } from "@/shared/hooks/useUnsavedChangesGuard";
@@ -152,6 +153,9 @@ export function FieldsPanel() {
       setCampoSeleccionadoDesignerId(plantillaDesigner.elements[0]?.id);
     }
   }, [plantillaDesignerActual, queryPlantillasDesigner.data]);
+
+  // Workflow: el panel "Flujo del proceso" muestra el flujo del formulario abierto.
+  useEffect(() => setCurrentDesignerLayout(plantillaDesignerId), [plantillaDesignerId]);
 
   const elementosDesigner = plantillaDesignerActual?.elements ?? [];
   const campoSeleccionadoDesigner = useMemo(
