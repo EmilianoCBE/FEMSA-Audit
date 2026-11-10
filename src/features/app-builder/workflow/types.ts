@@ -11,6 +11,18 @@ export type WorkflowState = {
   name: string;
   tone: StateTone;
   position: Point;
+  /** Fase 2: días que un hallazgo puede quedarse en este estado antes de considerarse vencido. */
+  slaDays?: number;
+};
+
+/** Lo que se exige para ejecutar una transición (fase 2; lo aplicará el flujo en operación). */
+export type TransitionRequirements = {
+  /** Al menos una evidencia adjunta. */
+  evidence?: boolean;
+  /** Comentario obligatorio (por ejemplo, al devolver o rechazar). */
+  comment?: boolean;
+  /** Plan de acción capturado (con responsable y fecha compromiso). */
+  actionPlan?: boolean;
 };
 
 export type TransitionVariant = "default" | "active" | "rejected" | "suggested";
@@ -27,8 +39,9 @@ export type WorkflowTransition = {
   /** Trazo SVG ya enrutado dentro del canvas. */
   path: string;
   labelPosition: Point;
-  labelAnchor?: "start" | "middle";
+  labelAnchor?: "start" | "middle" | "end";
   variant: TransitionVariant;
+  requires?: TransitionRequirements;
 };
 
 export type CanvasWarning = {
@@ -68,22 +81,6 @@ export type StoredWorkflow = Omit<WorkflowDiagram, "warnings" | "selectedStateId
   /** El trazo es opcional: si falta, se calcula entre los dos estados al cargar. */
   transitions: readonly (Omit<WorkflowTransition, "path" | "labelPosition"> &
     Partial<Pick<WorkflowTransition, "path" | "labelPosition">>)[];
-};
-
-/* ---------- Inspector ---------- */
-
-export type ToggleOption = {
-  id: string;
-  label: string;
-  description?: string;
-  enabled: boolean;
-};
-
-export type TransitionSettings = {
-  title: string;
-  permissions: readonly { label: string; value: string }[];
-  preconditions: readonly ToggleOption[];
-  automations: readonly ToggleOption[];
 };
 
 /* ---------- Tablas ---------- */

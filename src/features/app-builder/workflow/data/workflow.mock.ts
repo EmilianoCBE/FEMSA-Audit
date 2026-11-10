@@ -1,4 +1,4 @@
-import type { NotificationRule, TransitionSettings, WorkflowDiagram, WorkflowRule } from "../types";
+import type { NotificationRule, WorkflowDiagram, WorkflowRule } from "../types";
 
 export const findingLifecycleMock: WorkflowDiagram = {
   size: { width: 1010, height: 340 },
@@ -67,6 +67,7 @@ export const findingLifecycleMock: WorkflowDiagram = {
       labelPosition: { x: 794, y: 42 },
       labelAnchor: "middle",
       variant: "default",
+      requires: { evidence: true },
     },
     {
       id: "reject",
@@ -77,6 +78,7 @@ export const findingLifecycleMock: WorkflowDiagram = {
       path: "M690 82 L690 168",
       labelPosition: { x: 698, y: 128 },
       variant: "rejected",
+      requires: { comment: true },
     },
     {
       id: "return-to-review",
@@ -106,34 +108,6 @@ export const findingLifecycleMock: WorkflowDiagram = {
     { id: "risk-acceptance", kind: "Sugerido", name: "Aceptación de riesgo", position: { x: 422, y: 170 } },
   ],
   annotations: [{ id: "suggested-severity", label: "Severidad sugerida", position: { x: 422, y: 88 } }],
-};
-
-export const selectedTransitionMock: TransitionSettings = {
-  title: "Validación del responsable → Validación dirección",
-  permissions: [
-    { label: "Rol que puede ejecutarla", value: "Jefe de Auditoría" },
-    { label: "Segregación de funciones", value: "No puede aprobar su propia auditoría" },
-  ],
-  preconditions: [
-    { id: "evidence", label: "Tiene al menos una evidencia adjunta", enabled: true },
-    { id: "residual-risk", label: "Riesgo residual calculado", enabled: true },
-    { id: "action-plan", label: "severidad >= Alto requiere plan de acción", enabled: true },
-    { id: "reviewer-comment", label: "Comentario del revisor obligatorio", enabled: false },
-  ],
-  automations: [
-    {
-      id: "suggest-severity",
-      label: "Sugerir severidad",
-      description: "Propone un nivel a partir del control, la evidencia y hallazgos históricos similares.",
-      enabled: true,
-    },
-    {
-      id: "suggest-approver",
-      label: "Sugerir aprobador",
-      description: "Recomienda al responsable según matriz de roles y área auditada.",
-      enabled: true,
-    },
-  ],
 };
 
 export const workflowRulesMock: WorkflowRule[] = [

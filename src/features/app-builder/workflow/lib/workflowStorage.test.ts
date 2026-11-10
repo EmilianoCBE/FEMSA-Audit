@@ -63,3 +63,24 @@ describe("flujo guardado por formulario", () => {
     expect(describeWorkflowChanges(DEFAULT_WORKFLOW, moved)).toEqual(["Se reacomodó el diagrama del flujo"]);
   });
 });
+
+describe("fase 2: comparar versiones con requisitos y plazos", () => {
+  it("describe requisitos y plazos que cambiaron", () => {
+    const before = DEFAULT_WORKFLOW;
+    const after = {
+      ...before,
+      states: before.states.map((state) => (state.id === "in-review" ? { ...state, slaDays: 10 } : state)),
+      transitions: before.transitions.map((transition) =>
+        transition.id === "close" ? { ...transition, requires: { evidence: true, actionPlan: true } } : transition,
+      ),
+    };
+    expect(describeWorkflowChanges(before, after)).toEqual([
+      "«En revisión» ahora tiene un plazo de 10 días",
+      "«cerrar» ahora exige plan de acción",
+    ]);
+    expect(describeWorkflowChanges(after, before)).toEqual([
+      "«En revisión» ya no tiene plazo",
+      "«cerrar» ya no exige plan de acción",
+    ]);
+  });
+});

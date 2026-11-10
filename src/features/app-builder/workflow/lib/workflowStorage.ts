@@ -1,5 +1,5 @@
 import { findingLifecycleMock } from "../data/workflow.mock";
-import type { StoredWorkflow, WorkflowDiagram, WorkflowState } from "../types";
+import type { StoredWorkflow, TransitionRequirements, WorkflowDiagram, WorkflowState } from "../types";
 import { pathBetween } from "./workflowAssistant";
 
 // Fase 1 del workflow - Emiliano Carrizales: el flujo se guarda con cada formulario (layout del Designer) y entra
@@ -31,6 +31,12 @@ export function fromStoredWorkflow(stored: StoredWorkflow | null | undefined): W
   });
   return { ...workflow, transitions, warnings: [] };
 }
+
+const REQUIREMENT_TEXT: Record<keyof TransitionRequirements, string> = {
+  evidence: "evidencia adjunta",
+  comment: "un comentario",
+  actionPlan: "plan de acción",
+};
 
 const canonical = (value: unknown): string =>
   Array.isArray(value)
@@ -67,6 +73,13 @@ export function describeWorkflowChanges(
     if (previous && (previous.name !== state.name || previous.kind !== state.kind)) {
       changes.push(`Se modificó el estado «${state.name}»`);
     }
+    if (previous && previous.slaDays !== state.slaDays) {
+      changes.push(
+        state.slaDays
+          ? `«${state.name}» ahora tiene un plazo de ${state.slaDays} días`
+          : `«${state.name}» ya no tiene plazo`,
+      );
+    }
   }
 
   const name = (workflow: StoredWorkflow, id: string) => workflow.states.find((state) => state.id === id)?.name ?? id;
@@ -86,6 +99,15 @@ export function describeWorkflowChanges(
       previous.to !== transition.to
     ) {
       changes.push(`Se modificó la transición «${transition.label}»`);
+    }
+    if (previous) {
+      for (const [key, text] of Object.entries(REQUIREMENT_TEXT) as [keyof TransitionRequirements, string][]) {
+        const before = previous.requires?.[key] === true;
+        const now = transition.requires?.[key] === true;
+        if (before !== now) {
+          changes.push(`«${transition.label}» ${now ? "ahora exige" : "ya no exige"} ${text}`);
+        }
+      }
     }
   }
   for (const transition of before.transitions) {

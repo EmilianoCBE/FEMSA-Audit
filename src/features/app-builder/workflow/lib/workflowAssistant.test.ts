@@ -1,7 +1,25 @@
 import { describe, expect, it } from "vitest";
 import { findingLifecycleMock } from "../data/workflow.mock";
 import type { WorkflowDiagram, WorkflowState, WorkflowTransition } from "../types";
-import { analyzeWorkflow, applyWorkflowChange, pathMidpoint, suggestionWarnings } from "./workflowAssistant";
+import {
+  analyzeWorkflow as analyzeAll,
+  applyWorkflowChange,
+  describeWorkflowChange,
+  pathMidpoint,
+  suggestionWarnings,
+  type WorkflowRuleId,
+} from "./workflowAssistant";
+
+// Las reglas de control de la fase 2 tienen sus propias pruebas al final; las de estructura (US16) se prueban solas.
+const AUDIT_RULES = new Set<WorkflowRuleId>([
+  "missing-initial-state",
+  "multiple-initial-states",
+  "exit-from-final-state",
+  "segregation-of-duties",
+  "return-without-comment",
+  "close-without-evidence",
+]);
+const analyzeWorkflow = (d: WorkflowDiagram) => analyzeAll(d).filter((item) => !AUDIT_RULES.has(item.rule));
 
 const state = (id: string, kind: string, x: number, y = 20): WorkflowState => ({
   id,
@@ -212,5 +230,80 @@ describe("marcas del diagrama", () => {
     expect(pathMidpoint("M0 0 L10 0")).toEqual({ x: 5, y: 0 });
     expect(pathMidpoint("M614 198 L298 198 L298 82")).toEqual({ x: 398, y: 198 });
     expect(pathMidpoint("M1 1")).toBeNull();
+  });
+});
+
+describe("fase 2: reglas de control interno", () => {
+  const audit = (d: WorkflowDiagram) => analyzeAll(d).filter((item) => AUDIT_RULES.has(item.rule));
+  const controlled = () => {
+    const d = base();
+    return {
+      ...d,
+      transitions: [d.transitions[0], { ...d.transitions[1], role: "Jefe de Auditoría", requires: { evidence: true } }],
+    };
+  };
+
+  it("un flujo con roles y controles correctos no tiene observaciones", () => {
+    expect(audit(controlled())).toEqual([]);
+  });
+
+  it("segregación de funciones: un auditor no cierra ni aprueba; se propone a quien valida", () => {
+    const d = controlled();
+    const result = audit({ ...d, transitions: [d.transitions[0], { ...d.transitions[1], role: "Auditor" }] });
+    expect(result.map((item) => item.id)).toEqual(["segregation-of-duties:bc"]);
+    expect(result[0].change).toEqual({
+      op: "set-transition-role",
+      transitionId: "bc",
+      role: "Dirección de Auditoría",
+    });
+  });
+
+  it("devolver o rechazar pide comentario y cerrar pide evidencia", () => {
+    const d = controlled();
+    const withReturn = {
+      ...d,
+      states: [...d.states, state("r", "Retorno", 200, 170)],
+      transitions: [
+        ...d.transitions.map((item) => ({ ...item, requires: undefined })),
+        transition("br", "b", "r", "Jefe de Auditoría"),
+        transition("rb", "r", "b"),
+      ],
+    };
+    const result = audit(withReturn);
+    expect(result.map((item) => item.id)).toEqual(["close-without-evidence:bc", "return-without-comment:br"]);
+    const next = applyWorkflowChange(withReturn, result[1].change as never);
+    expect(next.transitions.find((item) => item.id === "br")?.requires).toEqual({ comment: true });
+    expect(describeWorkflowChange(withReturn, result[0].change as never)).toBe("exigir evidencia adjunta en «bc»");
+  });
+
+  it("un solo estado inicial, y de un final no sale nada", () => {
+    const d = controlled();
+    const noInitial = {
+      ...d,
+      states: d.states.map((item) => (item.id === "a" ? { ...item, kind: "En proceso" } : item)),
+    };
+    expect(audit(noInitial).map((item) => item.id)).toEqual(["missing-initial-state"]);
+
+    const twoInitials = {
+      ...d,
+      states: d.states.map((item) => (item.id === "b" ? { ...item, kind: "Inicial" } : item)),
+    };
+    expect(audit(twoInitials).map((item) => item.id)).toEqual(["multiple-initial-states:b"]);
+
+    const reopen = { ...d, transitions: [...d.transitions, transition("ca", "c", "a", "Jefe de Auditoría")] };
+    const [exit] = audit(reopen);
+    expect(exit.id).toBe("exit-from-final-state:ca");
+    expect(exit.change).toEqual({ op: "remove-transition", transitionId: "ca" });
+  });
+
+  it("quitar un requisito deja la transición como estaba", () => {
+    const d = controlled();
+    const next = applyWorkflowChange(d, {
+      op: "set-transition-requirement",
+      transitionId: "bc",
+      requirement: "evidence",
+      value: false,
+    });
+    expect(next.transitions[1]).not.toHaveProperty("requires");
   });
 });

@@ -60,7 +60,7 @@ describe("Asistente de diseño del workflow (US15-US18)", () => {
   it("US16 marca las inconsistencias en el diagrama y explica cada una", () => {
     cy.get("[role=img][aria-label$='no tiene rol asignado']").should("have.length", 2);
     openAssistant();
-    cy.get("[aria-label='Asistente de diseño del flujo'] li").should("have.length", 2);
+    cy.get("[aria-label='Sugerencias pendientes'] > li").should("have.length", 2);
     card("«cerrar» no tiene rol asignado")
       .should("contain", "Por qué:")
       .and("contain", "Cambio propuesto: asignar el rol «Dirección de Auditoría» a «cerrar»");
@@ -113,7 +113,9 @@ describe("Asistente de diseño del workflow (US15-US18)", () => {
     cy.contains("A la IA solo se envía la estructura del flujo");
     cy.contains("button", "Pedir sugerencias a la IA").click();
     cy.wait("@ia").then(({ request }) => {
-      expect(Object.keys(request.body)).to.deep.equal(["states", "transitions", "known"]);
+      // Fase 3: también el formulario (appId), para registrar las sugerencias; nunca posiciones ni datos capturados.
+      expect(Object.keys(request.body)).to.deep.equal(["appId", "states", "transitions", "known"]);
+      expect(request.body.appId).to.be.a("string");
       expect(JSON.stringify(request.body)).not.to.contain("position");
       expect(request.body.known).to.have.length(2);
     });

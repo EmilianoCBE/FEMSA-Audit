@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import { useQuery } from "@/shared/hooks/useQuery";
 import { formatLatency, summarizeMetrics } from "../lib/metricsSummary";
+import type { DesignerMetrics } from "../types";
 import { assistantService } from "../services/assistantService";
 
 // US17 - Emiliano Carrizales: qué tanto se aceptan las propuestas del asistente (registradas en AppAiRecommendations).
@@ -9,11 +10,13 @@ type AssistantMetricsProps = {
   appId: string;
   /** Cambia cuando hay un análisis o una decisión nueva, para volver a pedir las métricas. */
   refreshKey: number;
+  /** De dónde salen las métricas; por omisión, las del Designer (el Workflow pasa las suyas). */
+  load?: (appId: string, signal: AbortSignal) => Promise<DesignerMetrics>;
 };
 
-export function AssistantMetrics({ appId, refreshKey }: AssistantMetricsProps) {
+export function AssistantMetrics({ appId, refreshKey, load = assistantService.metrics }: AssistantMetricsProps) {
   // biome-ignore lint/correctness/useExhaustiveDependencies: refreshKey solo sirve para volver a pedir los datos.
-  const fetcher = useCallback((signal: AbortSignal) => assistantService.metrics(appId, signal), [appId, refreshKey]);
+  const fetcher = useCallback((signal: AbortSignal) => load(appId, signal), [appId, refreshKey, load]);
   const { data, error } = useQuery(fetcher);
 
   if (error) {

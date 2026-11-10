@@ -6,6 +6,8 @@ import type { WorkflowChange, WorkflowRuleId, WorkflowSuggestion } from "./workf
 // Aquí solo se arma lo que se envía (la estructura del flujo, RNF-13) y se convierte lo que regresa.
 
 export type WorkflowAiRequest = {
+  /** Fase 3: formulario del flujo, para que el back registre las sugerencias y sus decisiones. */
+  appId?: string;
   states: { id: string; name: string; kind: string }[];
   transitions: { id: string; from: string; to: string; label: string; role: string | null }[];
   known: { title: string; change: WorkflowChange | null }[];
@@ -20,6 +22,8 @@ export type WorkflowAiAnalysis = {
   provider: string;
   promptVersion: string | null;
   latencyMs: number;
+  /** Fase 3: si se guardaron (entonces cada decisión se registra con su id). */
+  recorded?: boolean;
   suggestions: {
     id: string;
     kind: WorkflowAiKind;
@@ -41,9 +45,11 @@ const RULE_BY_KIND: Record<WorkflowAiKind, WorkflowRuleId> = {
 export function buildWorkflowAiRequest(
   diagram: WorkflowDiagram,
   ruleSuggestions: readonly WorkflowSuggestion[],
+  appId?: string,
 ): WorkflowAiRequest {
   const stateIds = new Set(diagram.states.map((state) => state.id));
   return {
+    ...(appId && { appId }),
     states: diagram.states.map(({ id, name, kind }) => ({ id, name, kind })),
     transitions: diagram.transitions
       .filter(
@@ -66,4 +72,30 @@ export function toWorkflowSuggestions(analysis: WorkflowAiAnalysis): WorkflowSug
     ...(suggestion.change && { change: suggestion.change }),
     source: "ai",
   }));
+}
+
+/* ---------- RF-17: flujo propuesto desde una descripción ---------- */
+
+export type GeneratedWorkflow = {
+  summary: string;
+  states: { id: string; name: string; kind: string }[];
+  transitions: { id: string; from: string; to: string; label: string; role: string }[];
+};
+
+export type WorkflowGeneration = {
+  aiAvailable: boolean;
+  aiUnavailableReason: AiUnavailableReason | null;
+  aiRetryAt: string | null;
+  /** Se quitaron correos o números largos antes de enviar la descripción. */
+  redacted: boolean;
+  provider: string;
+  promptVersion: string | null;
+  latencyMs: number;
+  /** `null` si la IA no está disponible o lo que propuso no se podía usar. */
+  workflow: GeneratedWorkflow | null;
+};
+
+/** Mismo filtro que el back (para avisar antes de enviar): correos y números largos. */
+export function hasPersonalData(text: string) {
+  return /[\w.+-]+@[\w-]+(\.[\w-]+)+/.test(text) || /\+?\d[\d\s().-]{5,}\d/.test(text);
 }

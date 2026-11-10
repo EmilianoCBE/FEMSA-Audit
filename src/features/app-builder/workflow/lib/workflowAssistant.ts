@@ -1,4 +1,12 @@
-import type { CanvasWarning, Point, WorkflowDiagram, WorkflowState, WorkflowTransition } from "../types";
+import type {
+  CanvasWarning,
+  Point,
+  TransitionRequirements,
+  WorkflowDiagram,
+  WorkflowState,
+  WorkflowTransition,
+} from "../types";
+import { rerouteTransitions } from "./workflowLayout";
 
 /**
  * US16 / US17 en el workflow: reglas deterministas (sin IA) que revisan el ciclo de vida y proponen cambios.
@@ -16,7 +24,13 @@ export const WORKFLOW_ROLES = [
 export type WorkflowChange =
   | { op: "set-transition-role"; transitionId: string; role: string }
   | { op: "add-transition"; from: string; to: string; label: string; role: string }
-  | { op: "remove-transition"; transitionId: string };
+  | { op: "remove-transition"; transitionId: string }
+  | {
+      op: "set-transition-requirement";
+      transitionId: string;
+      requirement: keyof TransitionRequirements;
+      value: boolean;
+    };
 
 export type WorkflowRuleId =
   | "unreachable-state"
@@ -25,6 +39,13 @@ export type WorkflowRuleId =
   | "transition-without-role"
   | "duplicate-transition"
   | "cycle-without-exit"
+  // Fase 2: reglas propias de auditoría interna.
+  | "missing-initial-state"
+  | "multiple-initial-states"
+  | "exit-from-final-state"
+  | "segregation-of-duties"
+  | "return-without-comment"
+  | "close-without-evidence"
   // Propuestas de la IA (US15, RF-17/RF-18): no son reglas, pero se muestran y deciden igual.
   | "ai-relation"
   | "ai-role"
@@ -74,6 +95,26 @@ export function analyzeWorkflow(diagram: WorkflowDiagram): WorkflowSuggestion[] 
   const suggestions: WorkflowSuggestion[] = [];
   const initial = diagram.states.find(isInitial);
   const finals = diagram.states.filter(isFinal);
+
+  const initials = diagram.states.filter(isInitial);
+  if (diagram.states.length > 0 && initials.length === 0) {
+    suggestions.push({
+      id: "missing-initial-state",
+      rule: "missing-initial-state",
+      title: "El flujo no tiene estado inicial",
+      reason: "Ningún estado indica dónde nace el hallazgo. Marca uno como «Inicial» (por ejemplo, Borrador).",
+      target: null,
+    });
+  }
+  for (const extra of initials.slice(1)) {
+    suggestions.push({
+      id: `multiple-initial-states:${extra.id}`,
+      rule: "multiple-initial-states",
+      title: `«${extra.name}» también es inicial`,
+      reason: `Un hallazgo debe nacer siempre en el mismo estado; ya está «${initials[0].name}». Cambia el tipo de este.`,
+      target: { type: "state", id: extra.id },
+    });
+  }
 
   if (diagram.states.length > 0 && finals.length === 0) {
     suggestions.push({
@@ -128,6 +169,7 @@ export function analyzeWorkflow(diagram: WorkflowDiagram): WorkflowSuggestion[] 
 
   suggestions.push(...cycleWithoutExit(diagram, transitions, finals));
 
+  const steps = stepsFromInitial(diagram);
   const seen = new Map<string, WorkflowTransition>();
   for (const transition of transitions) {
     const key = `${transition.from}→${transition.to}→${transition.label.trim().toLowerCase()}`;
@@ -144,6 +186,8 @@ export function analyzeWorkflow(diagram: WorkflowDiagram): WorkflowSuggestion[] 
     } else {
       seen.set(key, transition);
     }
+
+    suggestions.push(...auditRules(diagram, transition, steps));
 
     if (!transition.role) {
       suggestions.push({
@@ -162,6 +206,115 @@ export function analyzeWorkflow(diagram: WorkflowDiagram): WorkflowSuggestion[] 
   }
 
   return suggestions;
+}
+
+const APPROVERS = new Set(["Jefe de Auditoría", "Dirección de Auditoría"]);
+
+/** Paso del proceso de cada estado: distancia más corta desde el inicial. */
+export function stepsFromInitial(diagram: WorkflowDiagram): Map<string, number> {
+  const transitions = realTransitions(diagram);
+  const initial = diagram.states.find(isInitial);
+  const steps = new Map<string, number>();
+  if (!initial) return steps;
+  steps.set(initial.id, 0);
+  const queue = [initial.id];
+  while (queue.length > 0) {
+    const current = queue.shift() as string;
+    for (const transition of transitions) {
+      if (transition.from === current && !steps.has(transition.to)) {
+        steps.set(transition.to, (steps.get(current) ?? 0) + 1);
+        queue.push(transition.to);
+      }
+    }
+  }
+  return steps;
+}
+
+/** Devolver: llegar a un "Retorno", o que una aprobación mande el hallazgo a un paso anterior del proceso. */
+export function isReturnTransition(
+  diagram: WorkflowDiagram,
+  transition: WorkflowTransition,
+  steps: ReadonlyMap<string, number> = stepsFromInitial(diagram),
+) {
+  const from = diagram.states.find((state) => state.id === transition.from);
+  const to = diagram.states.find((state) => state.id === transition.to);
+  if (to?.kind === "Retorno") return true;
+  const fromStep = steps.get(transition.from);
+  const toStep = steps.get(transition.to);
+  return from?.kind === "Aprobación" && fromStep !== undefined && toStep !== undefined && toStep < fromStep;
+}
+
+/** Aprobar o cerrar: llegar a un estado final, o pasar de una aprobación a la siguiente. */
+function isApprovalTransition(diagram: WorkflowDiagram, transition: WorkflowTransition) {
+  const from = diagram.states.find((state) => state.id === transition.from);
+  const to = diagram.states.find((state) => state.id === transition.to);
+  return to?.kind === "Final" || (from?.kind === "Aprobación" && to?.kind === "Aprobación");
+}
+
+/** Reglas de control interno sobre una transición (fase 2). */
+function auditRules(
+  diagram: WorkflowDiagram,
+  transition: WorkflowTransition,
+  steps: ReadonlyMap<string, number>,
+): WorkflowSuggestion[] {
+  const result: WorkflowSuggestion[] = [];
+  const from = diagram.states.find((state) => state.id === transition.from);
+  const target = { type: "transition" as const, id: transition.id };
+
+  if (from && isFinal(from)) {
+    result.push({
+      id: `exit-from-final-state:${transition.id}`,
+      rule: "exit-from-final-state",
+      title: `«${transition.label}» sale de un estado final`,
+      reason: `«${from.name}» es final: un hallazgo que llega ahí ya terminó. Si debe poder reabrirse, cambia el tipo del estado; si no, quita la transición.`,
+      target,
+      change: { op: "remove-transition", transitionId: transition.id },
+    });
+    return result;
+  }
+
+  if (transition.role && !APPROVERS.has(transition.role) && isApprovalTransition(diagram, transition)) {
+    result.push({
+      id: `segregation-of-duties:${transition.id}`,
+      rule: "segregation-of-duties",
+      title: `«${transition.label}» la ejecuta ${transition.role}`,
+      reason:
+        "Segregación de funciones: quien documenta o atiende el hallazgo no debe aprobarlo ni cerrarlo. Aprobar y " +
+        "cerrar corresponde al Jefe o a la Dirección de Auditoría.",
+      target,
+      change: {
+        op: "set-transition-role",
+        transitionId: transition.id,
+        role: proposeRole(diagram, transition.from, transition.to),
+      },
+    });
+  }
+
+  if (!transition.requires?.comment && isReturnTransition(diagram, transition, steps)) {
+    result.push({
+      id: `return-without-comment:${transition.id}`,
+      rule: "return-without-comment",
+      title: `«${transition.label}» debería pedir un comentario`,
+      reason:
+        "Quien devuelve o rechaza un hallazgo debe explicar qué falta. Sin comentario, el auditor no sabe qué " +
+        "corregir y no queda rastro de la decisión.",
+      target,
+      change: { op: "set-transition-requirement", transitionId: transition.id, requirement: "comment", value: true },
+    });
+  }
+
+  const to = diagram.states.find((state) => state.id === transition.to);
+  if (to && isFinal(to) && !transition.requires?.evidence) {
+    result.push({
+      id: `close-without-evidence:${transition.id}`,
+      rule: "close-without-evidence",
+      title: `«${transition.label}» debería pedir evidencia`,
+      reason: `Llegar a «${to.name}» sin evidencia deja el hallazgo sin soporte: en una revisión no se podría demostrar que se atendió.`,
+      target,
+      change: { op: "set-transition-requirement", transitionId: transition.id, requirement: "evidence", value: true },
+    });
+  }
+  return result;
 }
 
 /** Estados a los que se llega siguiendo transiciones desde `start` (sin incluirlo, salvo que haya un ciclo). */
@@ -274,14 +427,28 @@ export function applyWorkflowChange(diagram: WorkflowDiagram, change: WorkflowCh
         transitions: diagram.transitions.filter((transition) => transition.id !== change.transitionId),
       };
     }
+    case "set-transition-requirement": {
+      const current = diagram.transitions.find((transition) => transition.id === change.transitionId);
+      if (!current) return diagram;
+      const { [change.requirement]: _previous, ...others } = current.requires ?? {};
+      const requires = change.value ? { ...others, [change.requirement]: true } : others;
+      const { requires: _old, ...base } = current;
+      // Sin requisitos no se guarda la llave, para que "sin cambios" compare igual.
+      const next: WorkflowTransition = Object.keys(requires).length > 0 ? { ...base, requires } : base;
+      return {
+        ...diagram,
+        transitions: diagram.transitions.map((transition) => (transition.id === current.id ? next : transition)),
+      };
+    }
     case "add-transition": {
       const from = diagram.states.find((state) => state.id === change.from);
       const to = diagram.states.find((state) => state.id === change.to);
       if (!from || !to || from.id === to.id) return diagram;
       const ids = new Set(diagram.transitions.map((transition) => transition.id));
-      let id = `${change.from}-${change.to}`;
-      for (let n = 2; ids.has(id); n++) id = `${change.from}-${change.to}-${n}`;
-      return {
+      let id = `${change.from}-${change.to}`.slice(0, 56);
+      const base = id;
+      for (let n = 2; ids.has(id); n++) id = `${base}-${n}`;
+      const added: WorkflowDiagram = {
         ...diagram,
         transitions: [
           ...diagram.transitions,
@@ -291,12 +458,14 @@ export function applyWorkflowChange(diagram: WorkflowDiagram, change: WorkflowCh
             from: from.id,
             to: to.id,
             role: change.role,
-            variant: "default",
+            variant: to.kind === "Retorno" ? "rejected" : "default",
             labelAnchor: "start",
             ...pathBetween(from, to),
           },
         ],
       };
+      // Se traza rodeando los estados (y en su carril si es un regreso).
+      return rerouteTransitions(added, new Set([from.id, to.id]));
     }
   }
 }
@@ -357,6 +526,12 @@ export function suggestionWarnings(
   });
 }
 
+const REQUIREMENT_TEXT: Record<keyof TransitionRequirements, string> = {
+  evidence: "evidencia adjunta",
+  comment: "un comentario",
+  actionPlan: "plan de acción",
+};
+
 /** Texto del cambio propuesto, para mostrarlo antes de aceptarlo. */
 export function describeWorkflowChange(diagram: WorkflowDiagram, change: WorkflowChange): string {
   const label = (id: string) => diagram.transitions.find((transition) => transition.id === id)?.label ?? id;
@@ -367,5 +542,7 @@ export function describeWorkflowChange(diagram: WorkflowDiagram, change: Workflo
       return `quitar la transición repetida «${label(change.transitionId)}»`;
     case "add-transition":
       return `agregar «${change.label}» de ${stateName(diagram, change.from)} a ${stateName(diagram, change.to)} (rol ${change.role})`;
+    case "set-transition-requirement":
+      return `${change.value ? "exigir" : "dejar de exigir"} ${REQUIREMENT_TEXT[change.requirement]} en «${label(change.transitionId)}»`;
   }
 }
