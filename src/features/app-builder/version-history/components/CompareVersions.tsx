@@ -109,7 +109,7 @@ export function CompareVersions({ versions, hasUnversionedChanges, loadConfig, o
         </p>
       ) : isEmptyDiff(state.diff) ? (
         <p className="text-body-sm text-muted">
-          No hay diferencias en los campos entre {labelOf(pair.from)} y {labelOf(pair.to)}.
+          No hay diferencias en los campos ni en el flujo entre {labelOf(pair.from)} y {labelOf(pair.to)}.
         </p>
       ) : (
         <>
@@ -130,6 +130,11 @@ export function CompareVersions({ versions, hasUnversionedChanges, loadConfig, o
               id: field.id,
               text: `${field.label}: ${field.details.join("; ")}`,
             }))}
+          />
+          <DiffList
+            title="Flujo del proceso"
+            tone="text-accent"
+            items={state.diff.workflow.map((text, index) => ({ id: `workflow-${index}`, text }))}
           />
         </>
       )}

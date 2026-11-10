@@ -1,4 +1,5 @@
 import type { ElementoDesigner } from "../../designer/types";
+import { describeWorkflowChanges } from "../../workflow/lib/workflowStorage";
 import type { AppConfig } from "../types";
 import { fieldLabel, typeLabel } from "./versionChanges";
 
@@ -8,6 +9,8 @@ export type ConfigDiff = {
   added: { id: string; label: string }[];
   removed: { id: string; label: string }[];
   changed: FieldChange[];
+  /** Qué cambió en el flujo del proceso (vacío si es el mismo). */
+  workflow: string[];
 };
 
 const CONFIG_LABELS: Record<string, string> = {
@@ -54,7 +57,12 @@ export function diffConfigs(before: AppConfig, after: AppConfig): ConfigDiff {
   const beforeById = new Map(beforeElements.map((element) => [element.id, element]));
   const afterIds = new Set(afterElements.map((element) => element.id));
 
-  const diff: ConfigDiff = { added: [], removed: [], changed: [] };
+  const diff: ConfigDiff = {
+    added: [],
+    removed: [],
+    changed: [],
+    workflow: describeWorkflowChanges(before.workflow, after.workflow),
+  };
   for (const element of afterElements) {
     const previous = beforeById.get(element.id);
     if (!previous) {
@@ -70,7 +78,8 @@ export function diffConfigs(before: AppConfig, after: AppConfig): ConfigDiff {
   return diff;
 }
 
-export const isEmptyDiff = (diff: ConfigDiff) => !diff.added.length && !diff.removed.length && !diff.changed.length;
+export const isEmptyDiff = (diff: ConfigDiff) =>
+  !diff.added.length && !diff.removed.length && !diff.changed.length && !diff.workflow.length;
 
 /** Texto sugerido para "Cambios de esta versión" (uno por línea), a partir de la diferencia. */
 export function suggestChanges(diff: ConfigDiff): string[] {
@@ -81,5 +90,6 @@ export function suggestChanges(diff: ConfigDiff): string[] {
       const what = field.details.map((detail) => detail.split(":")[0]).join(", ");
       return `Se modificó el campo ${field.label} (${what.toLowerCase()})`;
     }),
+    ...diff.workflow,
   ];
 }

@@ -1,3 +1,4 @@
+import type { StoredWorkflow } from "../workflow/types";
 import type { ElementoDesigner } from "../designer/types";
 
 export type VersionStatus = "draft" | "current" | "archived" | "discarded";
@@ -21,6 +22,8 @@ export type AppVersion = {
 /** Configuración de la aplicación que se guarda en cada versión. */
 export type AppConfig = {
   elements?: ElementoDesigner[];
+  /** Flujo del proceso guardado con la versión (desde la fase 1 del workflow). */
+  workflow?: StoredWorkflow | null;
   [key: string]: unknown;
 };
 

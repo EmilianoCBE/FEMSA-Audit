@@ -231,7 +231,7 @@ function cycleWithoutExit(
 }
 
 /** Trazo recto entre dos estados: por el lado que los separa. */
-function pathBetween(from: WorkflowState, to: WorkflowState): { path: string; labelPosition: Point } {
+export function pathBetween(from: WorkflowState, to: WorkflowState): { path: string; labelPosition: Point } {
   const a = from.position;
   const b = to.position;
   if (a.y === b.y) {

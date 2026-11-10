@@ -60,6 +60,16 @@ export type WorkflowDiagram = {
   selectedStateId?: string;
 };
 
+/**
+ * Lo que se guarda del flujo de cada formulario (layout del Designer y AppVersions.config.workflow).
+ * Las marcas de advertencia y la selección no se guardan: se calculan en pantalla.
+ */
+export type StoredWorkflow = Omit<WorkflowDiagram, "warnings" | "selectedStateId" | "transitions"> & {
+  /** El trazo es opcional: si falta, se calcula entre los dos estados al cargar. */
+  transitions: readonly (Omit<WorkflowTransition, "path" | "labelPosition"> &
+    Partial<Pick<WorkflowTransition, "path" | "labelPosition">>)[];
+};
+
 /* ---------- Inspector ---------- */
 
 export type ToggleOption = {

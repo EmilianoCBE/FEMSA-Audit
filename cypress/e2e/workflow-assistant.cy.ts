@@ -29,6 +29,18 @@ describe("Asistente de diseño del workflow (US15-US18)", () => {
   beforeEach(() => {
     cy.intercept("GET", "/api/auth/me", { fixture: "user.json" });
     cy.intercept("GET", "/api/ai/status", { aiAvailable: true, reason: null, retryAt: null, provider: "mock" });
+    cy.intercept("GET", "/api/designer/layouts", {
+      layouts: [
+        {
+          id: "layout dummy",
+          name: "Modulo de hallazgos",
+          elements: [],
+          workflow: null,
+          createdAt: "2026-10-01T00:00:00.000Z",
+          updatedAt: "2026-10-01T00:00:00.000Z",
+        },
+      ],
+    });
     cy.visit("/app-builder/workflow/flow");
   });
 
